@@ -1,12 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PackageImports #-}
 
 import Control.Applicative
-import Database.SQLite.Simple (Connection, withConnection, query_, execute, Query)
-import Database.SQLite.Simple.FromRow
+import Control.Monad (forM_)
+import Data.Char (isSpace)
 import Data.List (isInfixOf, isPrefixOf)
 import Data.List.Split (splitOn)
-import Control.Monad (forM_)
-import Text.Regex (subRegex, mkRegex)
+import Database.SQLite.Simple (Connection, withConnection, query_, execute, Query)
+import Database.SQLite.Simple.FromRow
+import "regex-compat-tdfa" Text.Regex (subRegex, mkRegex) --Unicode support in regexes
 import Text.Regex.Posix ((=~))
 import Text.Printf (printf)
 
@@ -35,16 +37,16 @@ getExamples = (!! 2) . getFields
 getY :: AnkiNote -> String
 getY = (!! 3) . getFields
 
--- TODO finish
 -- | Primary deutsch word represented by the note (only valid for cards with 'wort' tag)
 extractWord :: AnkiNote -> String
-extractWord = deleteSound . deleteThingsInParens . getDeutsch
-  where 
-     deleteSound = takeWhile (/='[') 
+extractWord = deleteSpacesAndSlashes . deleteArticles . deletePartAfterDash . deleteSound . deleteThingsInParens . getDeutsch
+  where
+     deleteSound = delRegex "\\[sound:.*\\.mp3\\]"
      deleteThingsInParens = delRegex "\\([^\\)]*\\)"
-  
--- TODO should be local to extractWord
-delRegex regex input = subRegex (mkRegex regex) input "" --subst regex by empty String
+     deletePartAfterDash = delRegex " - .*"
+     deleteArticles s = let ws = words s in if length ws > 1 then last ws else s
+     deleteSpacesAndSlashes = filter (\c -> not (isSpace c) && c /= '/')
+     delRegex regex input = subRegex (mkRegex regex) input "" --subst regex by empty String
 
 
 allNotes, allWordNotes, notesWithoutPron :: Query
@@ -55,20 +57,20 @@ notesWithoutPron = "SELECT id,flds,tags FROM notes WHERE tags LIKE '%wort%' AND 
 
 -- Open DB and verify its contents
 main :: IO ()
-main = withConnection "collection.anki2" $ \conn -> checkNoteRules conn
+main = withConnection "collection.anki2" $ \conn -> validateNotes conn
 --main = withConnection "collection.anki2" $ \conn -> query_ conn allWordNotes >>= \notes -> mapM_ (putStrLn . extractWord) notes
 
 -- Verifying integrity of anki notes
-checkNoteRules :: Connection -> IO ()
-checkNoteRules conn = do
+validateNotes :: Connection -> IO ()
+validateNotes conn = do
     notes <- query_ conn allNotes :: IO [AnkiNote]
     forM_ noteRules $ \(rule, description) -> do
         let badNotes = filter rule notes
         if null badNotes
-            then putStrLn $ "Rule '" ++ description ++ "' OK"
+            then putStrLn $ "PASSED: " ++ description
             else do 
-                putStrLn $ printf "========== %s (%d notes) ==========" description (length badNotes)
-                mapM_ (putStrLn . (\n -> printf "  nid:%d %s" (noteId n) (noteFlds n))) badNotes
+                putStrLn $ printf "FAILED: %s (%d notes)" description (length badNotes)
+                mapM_ (putStrLn . (\n -> printf "   --->  nid:%d %s" (noteId n) (noteFlds n))) badNotes
 
 {-  let badNotes = filter hasQuot notes
     mapM_ (updateNote conn) badNotes  -}
@@ -87,14 +89,14 @@ type NoteFilter = AnkiNote -> Bool
 
 noteRules :: [(NoteFilter, String)]
 noteRules = 
-    [ (wrongFieldCount, "Note does not have 4 fields")
-    , (lastFieldNotY, "The last field of note is not 'y'")
-    , (maskFemNeutWithoutWort, "Note has Maskulinum/Femininum/Neutrum, but not 'wort' tag")
-    , (hasNbsp, "Note contains &nbsp;")
-    , (hasQuot, "Note contains &quot;")
-    , (hasSpan, "Note contains <span")
-    , (derDieDasWithoutTag, "r/e/s <=> Maskulinum/Femininum/Neutrum")
-    , (hasLeadingOrTrailingWhiteSpaces, "Some field has leading/trailing whitespace")
+    [ (wrongFieldCount, "Note must have 4 fields")
+    , (lastFieldNotY, "The last field of note must be 'y'")
+    , (maskFemNeutWithoutWort, "Note with Maskulinum/Femininum/Neutrum must have 'wort' tag")
+    , (hasNbsp, "Note mustn't contain &nbsp;")
+    , (hasQuot, "Note mustn't contain &quot;")
+    , (hasSpan, "Note mustn't contain <span")
+    , (derDieDasWithoutTag, "Tag Maskulinum/Femininum/Neutrum must be consistent with the article r/e/s")
+    , (hasLeadingOrTrailingWhiteSpaces, "Note mustn't have leading/trailing whitespace")
     ]
 
 wrongFieldCount :: NoteFilter --each note must have 4 fields
