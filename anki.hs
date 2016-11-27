@@ -1,15 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PackageImports #-}
 
-import Control.Applicative
+module Main where
+
 import Control.Monad (forM_)
 import Data.Char (isSpace)
 import Data.List (isInfixOf, isPrefixOf)
-import Data.List.Split (splitOn)
-import Database.SQLite.Simple (Connection, withConnection, query_, execute, Query)
-import Database.SQLite.Simple.FromRow
+import "split" Data.List.Split (splitOn) 
+import "sqlite-simple" Database.SQLite.Simple (Connection, withConnection, query_, execute, Query)
+import "sqlite-simple" Database.SQLite.Simple.FromRow
 import "regex-compat-tdfa" Text.Regex (subRegex, mkRegex) --Unicode support in regexes
-import Text.Regex.Posix ((=~))
+import Text.Regex.TDFA ((=~))
 import Text.Printf (printf)
 
 data AnkiNote = AnkiNote
