@@ -10,4 +10,6 @@ cp "$ANKI_DB" .
 echo "Checking database consistency (Haskell)"
 ./anki-check
 echo "Checking database consistency (Java)"
-java -jar ankipron.jar verify
+JAVA_HOME=/home/hrk/Tools/jdk-9
+$JAVA_HOME/bin/java -jar ankipron.jar verify
+
