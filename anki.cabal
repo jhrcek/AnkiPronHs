@@ -13,7 +13,7 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 executable anki-check
-  hs-source-dirs:      .
+  hs-source-dirs:      src
   main-is:             anki.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall
   build-depends:       base

@@ -1,14 +1,15 @@
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
-import Control.Monad (forM_)
 import Data.Char (isSpace)
+import Data.Foldable (for_)
 import Data.List (isInfixOf, isPrefixOf)
 import Data.List.Split (splitOn)
-import Database.SQLite.Simple (Connection, Query, execute, query_, withConnection)
-import Database.SQLite.Simple.FromRow
-import Text.Printf (printf)
+import Database.SQLite.Simple (Connection, Query, execute, query_,
+                               withConnection)
+import Database.SQLite.Simple.FromRow (FromRow, field, fromRow)
 import Text.Regex (mkRegex, subRegex)
 import Text.Regex.TDFA ((=~))
 
@@ -58,22 +59,22 @@ notesWithoutPron = "SELECT id,flds,tags FROM notes WHERE tags LIKE '%wort%' AND 
 -- Open DB and verify its contents
 main :: IO ()
 main = withConnection "collection.anki2" $ \conn -> validateNotes conn
---main = withConnection "collection.anki2" $ \conn -> query_ conn allWordNotes >>= \notes -> mapM_ (putStrLn . extractWord) notes
+-- main = withConnection "collection.anki2" $ \conn -> do
+--     notes <- query_ conn allWordNotes
+--     traverse_ (putStrLn . extractWord) notes
 
 -- Verifying integrity of anki notes
 validateNotes :: Connection -> IO ()
 validateNotes conn = do
     notes <- query_ conn allNotes :: IO [AnkiNote]
-    forM_ noteRules $ \(rule, description) -> do
-        let badNotes = filter rule notes
-        if null badNotes
-            then putStrLn $ "PASSED: " ++ description
-            else do
-                putStrLn $ printf "FAILED: %s (%d notes)" description (length badNotes)
-                mapM_ (putStrLn . (\n -> printf "   --->  nid:%d %s" (noteId n) (noteFlds n))) badNotes
-
-{-  let badNotes = filter hasQuot notes
-    mapM_ (updateNote conn) badNotes  -}
+    for_ noteRules $ \(rule, description) -> case filter rule notes of
+        [] ->
+            putStrLn $ "PASSED: " <> description
+        badNotes -> do
+            putStrLn $ "FAILED: " <> description <> " (" <> show (length badNotes) <> " notes)"
+            putStrLn . unlines $ fmap showNote badNotes
+  where
+    showNote AnkiNote{noteId, noteFlds} = "   --->  nid:" <> show noteId <> " " <> noteFlds
 
 replaceInFlds :: AnkiNote -> String -> String -> (String, Int)
 replaceInFlds note regex replacement = (newFlds, noteId note)
