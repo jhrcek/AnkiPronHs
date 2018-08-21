@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 import Test.Hspec
 
+import qualified Duden
 import qualified DWDS
 import qualified Types
 
@@ -31,3 +32,11 @@ main = hspec $ do
             DWDS.getMp3Url (DWord "Ärger") `shouldReturn` PronNotAvailable
         it "should return NotFound when word not in dictionary" $ do
             DWDS.getMp3Url (DWord "nonexistent") `shouldReturn` NotFound
+
+    describe "Duden.getMp3Url" $ do
+        it "should retrieve URL of pron mp3" $ do
+            Duden.getMp3Url (DWord "Bruder") `shouldReturn` PronFound (Mp3Url "https://www.duden.de/_media_/audio/ID4113233_375377226.mp3")
+        it "should return PronNotAvailable when word has no pron" $ do
+            Duden.getMp3Url (DWord "Ökumene") `shouldReturn` PronNotAvailable
+        it "should return NotFound when word not in dictionary" $ do
+            Duden.getMp3Url (DWord "nonexistent") `shouldReturn` NotFound

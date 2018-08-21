@@ -15,11 +15,13 @@ author: Jan Hrček
 library
     exposed-modules:
         AnkiDB
+        Duden
         DWDS
         Types
     build-depends:
         base,
         bytestring,
+        http-client,
         lens,
         sqlite-simple,
         regex-compat-tdfa,
