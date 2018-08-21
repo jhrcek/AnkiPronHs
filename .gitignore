@@ -1,15 +1,7 @@
 # directory with downloaded files
 Downloaded
-# java tool for downloading / verifying / modifying anki DB
-ankipron.jar
-# Haskell tool for verifying anki DB
-anki-check
 # Anki DB
 collection.anki2
-# adblockplus chrome extension needed to speedup download from DWDS
-adblockpluschrome.crx
-# chromedriver binary to control chrome via WebDriver
-chromedriver
 # File with mp3 URLs to download
 urls.txt
 .stack-work

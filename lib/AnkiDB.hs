@@ -1,19 +1,13 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module AnkiDB (validateNotes, allWordNotes, notesWithoutPron) where
+module AnkiDB (validateNotes, getNotesWithoutPron) where
 
 import Data.Foldable (for_)
 import Data.List (isInfixOf, isPrefixOf)
-import Database.SQLite.Simple (Connection, Query, query_, execute, withConnection)
+import Database.SQLite.Simple (Query, query_, withConnection)
 import Text.Regex.TDFA ((=~))
-import Types (AnkiNote (..), DWord(..), getDeutsch, getFields, getY, extractWord)
-import Text.Regex (mkRegex, subRegex)
-
-allNotes, allWordNotes, notesWithoutPron :: Query
-allNotes = "SELECT id,flds,tags FROM notes"
-allWordNotes = "SELECT id,flds,tags FROM notes WHERE tags LIKE '%wort%';"
-notesWithoutPron = "SELECT id,flds,tags FROM notes WHERE tags LIKE '%wort%' AND flds NOT LIKE '%.mp3%';"
+import Types (AnkiNote (..), getDeutsch, getFields, getY)
 
 -- Verifying integrity of anki notes
 validateNotes :: IO ()
@@ -77,17 +71,14 @@ containsUndesired str note = str `isInfixOf` noteFlds note
 fieldMatches :: String -> NoteFilter
 fieldMatches regex note = any (=~ regex) $ getFields note
 
-getAllWords :: IO [DWord]
-getAllWords = withConnection "collection.anki2" $ \conn -> do
-    notes <- query_ conn allWordNotes
-    return $ fmap extractWord notes
+getNotesWithoutPron :: IO [AnkiNote]
+getNotesWithoutPron =
+    withConnection "collection.anki2" $ \conn -> do
+        query_ conn notesWithoutPron
 
-replaceInFlds :: AnkiNote -> String -> String -> (String, Int)
-replaceInFlds note regex replacement = (newFlds, noteId note)
-  where newFlds = subRegex (mkRegex regex) (noteFlds note) replacement
+----- Queries -----
+allNotes :: Query
+allNotes = "SELECT id,flds,tags FROM notes"
 
-updateNote :: Connection -> AnkiNote -> IO()
-updateNote con note = do
-    let (a,b) = replaceInFlds note "&quot;" "\""
-    putStrLn $ "  " ++ noteFlds note ++ "\n->" ++ a
-    execute con "update notes set flds = ? where id = ?;" (a,b)
+notesWithoutPron :: Query
+notesWithoutPron = "SELECT id,flds,tags FROM notes WHERE tags LIKE '%wort%' AND flds NOT LIKE '%.mp3%';"

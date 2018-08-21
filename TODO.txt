@@ -1,4 +1,0 @@
-- Download adblockplus crx https://downloads.adblockplus.org/devbuilds/adblockpluschrome/
-- Automate downloading of mp3 pronunciation from
-https://www.dwds.de/wb/Kuriosit%C3%A4t
-https://www.duden.de/rechtschreibung/Kuriositaet
