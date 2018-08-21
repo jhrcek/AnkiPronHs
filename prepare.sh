@@ -17,7 +17,7 @@ cp "$ANKI_DB" "${ANKI_DB}_bck"
 echo "Copying collection.anki2 to local dir for further processing"
 cp "$ANKI_DB" .
 echo "Checking database consistency (Haskell)"
-./anki-check
+stack exec anki-exe
 echo "Checking database consistency (Java)"
 java -jar ankipron.jar verify
 

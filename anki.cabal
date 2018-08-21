@@ -1,24 +1,52 @@
-name:                anki
-version:             0.1.0.0
-synopsis:            Initial project template from stack
-description:         Please see README.md
-homepage:            https://github.com/githubuser/anki#readme
-license:             BSD3
-license-file:        LICENSE
-author:              Author name here
-maintainer:          example@example.com
-copyright:           2016 Author name here
-category:            Web
-build-type:          Simple
-cabal-version:       >=1.10
+name: anki
+version: 0.1.0.0
+cabal-version: >=1.10
+build-type: Simple
+license: BSD3
+license-file: LICENSE
+copyright: 2016 Author name here
+maintainer: example@example.com
+homepage: https://github.com/jhrcek/AnkiPron
+synopsis: Tool to download pronunciation MP3s and upload them to anki decks
+description: Please see README.md
+category: Web
+author: Jan Hrček
 
-executable anki-check
-  hs-source-dirs:      src
-  main-is:             anki.hs
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall
-  build-depends:       base
-                     , sqlite-simple
-                     , regex-compat-tdfa
-                     , regex-tdfa
-                     , split
-  default-language:    Haskell2010
+library
+    exposed-modules:
+        AnkiDB
+        DWDS
+        Types
+    build-depends:
+        base,
+        bytestring,
+        lens,
+        sqlite-simple,
+        regex-compat-tdfa,
+        regex-tdfa,
+        split,
+        tagsoup,
+        text,
+        wreq
+    default-language: Haskell2010
+    hs-source-dirs: lib
+    ghc-options: -O2 -Wall
+
+executable anki-exe
+    main-is: Main.hs
+    hs-source-dirs: .
+    ghc-options: -O2 -Wall
+    build-depends:
+        base,
+        anki
+    default-language: Haskell2010
+
+test-suite  anki-test
+    type: exitcode-stdio-1.0
+    main-is: Spec.hs
+    build-depends:
+        anki,
+        base,
+        hspec
+    default-language: Haskell2010
+    hs-source-dirs: test

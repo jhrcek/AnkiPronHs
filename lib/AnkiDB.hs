@@ -1,90 +1,30 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Main where
+module AnkiDB (validateNotes, allWordNotes, notesWithoutPron) where
 
-import Data.Char (isSpace)
 import Data.Foldable (for_)
 import Data.List (isInfixOf, isPrefixOf)
-import Data.List.Split (splitOn)
-import Database.SQLite.Simple (Connection, Query, execute, query_,
-                               withConnection)
-import Database.SQLite.Simple.FromRow (FromRow, field, fromRow)
-import Text.Regex (mkRegex, subRegex)
+import Database.SQLite.Simple (Connection, Query, query_, execute, withConnection)
 import Text.Regex.TDFA ((=~))
-
-data AnkiNote = AnkiNote
-    { noteId   :: Int
-    , noteFlds :: String
-    , noteTags :: String
-    }  deriving (Show)
-
-instance FromRow AnkiNote where
-  fromRow = AnkiNote <$> field <*> field <*> field
-
--- Extracting info from anki notes
-getFields :: AnkiNote -> [String]
-getFields = splitOn "\US" . noteFlds
-
-getCzech :: AnkiNote -> String
-getCzech = (!! 0) . getFields
-
-getDeutsch :: AnkiNote -> String
-getDeutsch = (!! 1) . getFields
-
-getExamples :: AnkiNote -> String
-getExamples = (!! 2) . getFields
-
-getY :: AnkiNote -> String
-getY = (!! 3) . getFields
-
--- | Primary deutsch word represented by the note (only valid for cards with 'wort' tag)
-extractWord :: AnkiNote -> String
-extractWord = deleteSpacesAndSlashes . deleteArticles . deletePartAfterDash . deleteSound . deleteThingsInParens . getDeutsch
-  where
-     deleteSound = delRegex "\\[sound:.*\\.mp3\\]"
-     deleteThingsInParens = delRegex "\\([^\\)]*\\)"
-     deletePartAfterDash = delRegex " - .*"
-     deleteArticles s = let ws = words s in if length ws > 1 then last ws else s
-     deleteSpacesAndSlashes = filter (\c -> not (isSpace c) && c /= '/')
-     delRegex regex input = subRegex (mkRegex regex) input "" --subst regex by empty String
-
+import Types (AnkiNote (..), DWord(..), getDeutsch, getFields, getY, extractWord)
+import Text.Regex (mkRegex, subRegex)
 
 allNotes, allWordNotes, notesWithoutPron :: Query
 allNotes = "SELECT id,flds,tags FROM notes"
 allWordNotes = "SELECT id,flds,tags FROM notes WHERE tags LIKE '%wort%';"
 notesWithoutPron = "SELECT id,flds,tags FROM notes WHERE tags LIKE '%wort%' AND flds NOT LIKE '%.mp3%';"
 
-
--- Open DB and verify its contents
-main :: IO ()
-main = withConnection "collection.anki2" $ \conn -> validateNotes conn
--- main = withConnection "collection.anki2" $ \conn -> do
---     notes <- query_ conn allWordNotes
---     traverse_ (putStrLn . extractWord) notes
-
 -- Verifying integrity of anki notes
-validateNotes :: Connection -> IO ()
-validateNotes conn = do
+validateNotes :: IO ()
+validateNotes  = withConnection "collection.anki2" $ \conn -> do
     notes <- query_ conn allNotes :: IO [AnkiNote]
     for_ noteRules $ \(rule, description) -> case filter rule notes of
         [] ->
             putStrLn $ "PASSED: " <> description
         badNotes -> do
             putStrLn $ "FAILED: " <> description <> " (" <> show (length badNotes) <> " notes)"
-            putStrLn . unlines $ fmap showNote badNotes
-  where
-    showNote AnkiNote{noteId, noteFlds} = "   --->  nid:" <> show noteId <> " " <> noteFlds
-
-replaceInFlds :: AnkiNote -> String -> String -> (String, Int)
-replaceInFlds note regex replacement = (newFlds, noteId note)
-  where newFlds = subRegex (mkRegex regex) (noteFlds note) replacement
-
-updateNote :: Connection -> AnkiNote -> IO()
-updateNote con note = do
-    let (a,b) = replaceInFlds note "&quot;" "\""
-    putStrLn $ "  " ++ noteFlds note ++ "\n->" ++ a
-    execute con "update notes set flds = ? where id = ?;" (a,b)
+            putStrLn . unlines $ fmap show badNotes
 
 type NoteFilter = AnkiNote -> Bool
 
@@ -107,8 +47,9 @@ lastFieldNotY :: NoteFilter --last field of each note must be y
 lastFieldNotY = (/= "y") . getY
 
 maskFemNeutWithoutWort :: NoteFilter --Every note which has Maskulinum, Femininum or Neutrum must also have "wort" tag
-maskFemNeutWithoutWort note = any (`isInfixOf` tags) ["Maskulinum", "Femininum" , "Neutrum" ]  &&  not ("wort" `isInfixOf` tags)
-    where tags = noteTags note
+maskFemNeutWithoutWort AnkiNote{noteTags} =
+    any (`isInfixOf` noteTags) ["Maskulinum", "Femininum" , "Neutrum" ] &&  not ("wort" `isInfixOf` noteTags)
+
 
 derDieDasWithoutTag :: NoteFilter -- Word has r/e/s <=> it has Maskulinum/Femininum/Neutrum tag
 derDieDasWithoutTag note =
@@ -135,3 +76,18 @@ containsUndesired str note = str `isInfixOf` noteFlds note
 
 fieldMatches :: String -> NoteFilter
 fieldMatches regex note = any (=~ regex) $ getFields note
+
+getAllWords :: IO [DWord]
+getAllWords = withConnection "collection.anki2" $ \conn -> do
+    notes <- query_ conn allWordNotes
+    return $ fmap extractWord notes
+
+replaceInFlds :: AnkiNote -> String -> String -> (String, Int)
+replaceInFlds note regex replacement = (newFlds, noteId note)
+  where newFlds = subRegex (mkRegex regex) (noteFlds note) replacement
+
+updateNote :: Connection -> AnkiNote -> IO()
+updateNote con note = do
+    let (a,b) = replaceInFlds note "&quot;" "\""
+    putStrLn $ "  " ++ noteFlds note ++ "\n->" ++ a
+    execute con "update notes set flds = ? where id = ?;" (a,b)
