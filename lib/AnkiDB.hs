@@ -1,7 +1,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module AnkiDB (validateNotes, getNotesWithoutPron) where
+module AnkiDB (validateNotes, getWordNotesWithoutPron) where
 
 import Data.Foldable (for_)
 import Data.List (isInfixOf, isPrefixOf)
@@ -71,14 +71,14 @@ containsUndesired str note = str `isInfixOf` noteFlds note
 fieldMatches :: String -> NoteFilter
 fieldMatches regex note = any (=~ regex) $ getFields note
 
-getNotesWithoutPron :: IO [AnkiNote]
-getNotesWithoutPron =
-    withConnection "collection.anki2" $ \conn -> do
-        query_ conn notesWithoutPron
+getWordNotesWithoutPron :: IO [AnkiNote]
+getWordNotesWithoutPron =
+    withConnection "collection.anki2" $
+        \conn -> query_ conn wordNotesWithoutPron
 
 ----- Queries -----
 allNotes :: Query
 allNotes = "SELECT id,flds,tags FROM notes"
 
-notesWithoutPron :: Query
-notesWithoutPron = "SELECT id,flds,tags FROM notes WHERE tags LIKE '%wort%' AND flds NOT LIKE '%.mp3%';"
+wordNotesWithoutPron :: Query
+wordNotesWithoutPron = "SELECT id,flds,tags FROM notes WHERE tags LIKE '%wort%' AND flds NOT LIKE '%.mp3%';"

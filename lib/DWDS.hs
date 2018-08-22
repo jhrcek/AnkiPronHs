@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module DWDS (getMp3Url) where
+module DWDS (search) where
 
 import Control.Lens ((^.))
 import Data.Text.Lazy (Text)
@@ -9,8 +9,8 @@ import Text.HTML.TagSoup (Tag, fromAttrib, isTagOpenName, parseTags)
 import Text.HTML.TagSoup.Match (tagOpenAttrLit)
 import Types (Wort (..), Mp3Url (..), SearchResult (..))
 
-getMp3Url :: Wort -> IO SearchResult
-getMp3Url (Wort word) = do
+search :: Wort -> IO SearchResult
+search (Wort word) = do
     resp <- Wreq.get $ "https://www.dwds.de/wb/" <> word
     let bodyLBS = resp ^. Wreq.responseBody
     return . extractSearchResult . parseTags $ decodeUtf8 bodyLBS
@@ -29,8 +29,8 @@ extractMp3Url =
 
 isWordWithoutPron :: [Tag Text] -> Bool
 isWordWithoutPron =
-    not . null . filter (tagOpenAttrLit "div" ("class", "dwdswb-artikel"))
+    any (tagOpenAttrLit "div" ("class", "dwdswb-artikel"))
 
 isNotFoundResult :: [Tag Text] -> Bool
 isNotFoundResult =
-    not . null . filter (tagOpenAttrLit "p" ("class", "bg-danger"))
+    any (tagOpenAttrLit "p" ("class", "bg-danger"))

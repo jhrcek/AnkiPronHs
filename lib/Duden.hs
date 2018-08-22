@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-module Duden (getMp3Url) where
+module Duden (search) where
 
 import qualified Network.Wreq as Wreq
 
@@ -14,9 +14,9 @@ import Text.HTML.TagSoup (Tag, fromAttrib, parseTags)
 import Text.HTML.TagSoup.Match (tagOpenAttrLit)
 import Types (Wort (..), Mp3Url (..), SearchResult (..))
 
-getMp3Url :: Wort -> IO SearchResult
-getMp3Url (Wort word) = handle handler $ do
-    resp <- Wreq.get ("https://www.duden.de/rechtschreibung/" <> (replaceUmlauts word))
+search :: Wort -> IO SearchResult
+search (Wort word) = handle handler $ do
+    resp <- Wreq.get ("https://www.duden.de/rechtschreibung/" <> replaceUmlauts word)
     let bodyLBS = resp ^. Wreq.responseBody
     return . extractSearchResult . parseTags $ decodeUtf8 bodyLBS
   where
@@ -45,4 +45,4 @@ extractMp3Url =
 
 isWordWithoutPron :: [Tag Text] -> Bool
 isWordWithoutPron =
-    not . null . filter (tagOpenAttrLit "div" ("class", "entry"))
+    any (tagOpenAttrLit "div" ("class", "entry"))

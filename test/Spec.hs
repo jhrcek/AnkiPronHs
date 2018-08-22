@@ -9,10 +9,10 @@ import Types (AnkiNote (..), Wort (..), Mp3Url (..), SearchResult (..))
 
 main :: IO ()
 main = hspec $ do
-    describe "Types.extractWord" $ do
+    describe "Types.extractWord" $
         it "should extract the word correctly" $ do
             let mkTest (flds, expecteWort) =
-                  Types.extractWord (AnkiNote 1 flds "") `shouldBe` (Wort expecteWort)
+                  Types.extractWord (AnkiNote 1 flds "") `shouldBe` Wort expecteWort
             mapM_ mkTest
                 [ ("pralinka\USe Praline (-, -n)\US\USy", "Praline")
                 , ("vydání (knihy ap.)\USe Auflage (-, -n)\US\USy", "Auflage")
@@ -25,18 +25,18 @@ main = hspec $ do
                 , ("prosit (někoho o něco)<br />(min?)\USbitten (j-n um etw) - bat - hat gebeten\US\USy", "bitten")
                 ]
 
-    describe "DWDS.getMp3Url" $ do
-        it "should retrieve URL of pron mp3" $ do
-            DWDS.getMp3Url (Wort "Bär") `shouldReturn` PronFound (Mp3Url "http://media.dwds.de/dwds2/audio/005/der_Baer.mp3")
-        it "should return PronNotAvailable when word has no pron" $ do
-            DWDS.getMp3Url (Wort "Ärger") `shouldReturn` PronNotAvailable
-        it "should return NotFound when word not in dictionary" $ do
-            DWDS.getMp3Url (Wort "nonexistent") `shouldReturn` NotFound
+    describe "DWDS.search" $ do
+        it "should retrieve URL of pron mp3" $
+            DWDS.search (Wort "Bär") `shouldReturn` PronFound (Mp3Url "http://media.dwds.de/dwds2/audio/005/der_Baer.mp3")
+        it "should return PronNotAvailable when word has no pron" $
+            DWDS.search (Wort "Ärger") `shouldReturn` PronNotAvailable
+        it "should return NotFound when word not in dictionary" $
+            DWDS.search (Wort "nonexistent") `shouldReturn` NotFound
 
-    describe "Duden.getMp3Url" $ do
-        it "should retrieve URL of pron mp3" $ do
-            Duden.getMp3Url (Wort "Bruder") `shouldReturn` PronFound (Mp3Url "https://www.duden.de/_media_/audio/ID4113233_375377226.mp3")
-        it "should return PronNotAvailable when word has no pron" $ do
-            Duden.getMp3Url (Wort "Ökumene") `shouldReturn` PronNotAvailable
-        it "should return NotFound when word not in dictionary" $ do
-            Duden.getMp3Url (Wort "nonexistent") `shouldReturn` NotFound
+    describe "Duden.search" $ do
+        it "should retrieve URL of pron mp3" $
+            Duden.search (Wort "Bruder") `shouldReturn` PronFound (Mp3Url "https://www.duden.de/_media_/audio/ID4113233_375377226.mp3")
+        it "should return PronNotAvailable when word has no pron" $
+            Duden.search (Wort "Ökumene") `shouldReturn` PronNotAvailable
+        it "should return NotFound when word not in dictionary" $
+            Duden.search (Wort "nonexistent") `shouldReturn` NotFound

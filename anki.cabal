@@ -15,14 +15,19 @@ author: Jan Hrček
 library
     exposed-modules:
         AnkiDB
+        Download
         Duden
         DWDS
         Types
     build-depends:
         base,
         bytestring,
+        containers,
+        directory,
+        filepath,
         http-client,
         lens,
+        process,
         sqlite-simple,
         regex-compat-tdfa,
         regex-tdfa,
