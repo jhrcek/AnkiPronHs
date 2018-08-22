@@ -7,10 +7,10 @@ import Data.Text.Lazy.Encoding (decodeUtf8)
 import qualified Network.Wreq as Wreq
 import Text.HTML.TagSoup (Tag, fromAttrib, isTagOpenName, parseTags)
 import Text.HTML.TagSoup.Match (tagOpenAttrLit)
-import Types (DWord (..), Mp3Url (..), SearchResult (..))
+import Types (Wort (..), Mp3Url (..), SearchResult (..))
 
-getMp3Url :: DWord -> IO SearchResult
-getMp3Url (DWord word) = do
+getMp3Url :: Wort -> IO SearchResult
+getMp3Url (Wort word) = do
     resp <- Wreq.get $ "https://www.dwds.de/wb/" <> word
     let bodyLBS = resp ^. Wreq.responseBody
     return . extractSearchResult . parseTags $ decodeUtf8 bodyLBS

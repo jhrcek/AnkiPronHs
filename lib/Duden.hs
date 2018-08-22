@@ -12,10 +12,10 @@ import Data.Text.Lazy.Encoding (decodeUtf8)
 import Network.HTTP.Client (HttpException)
 import Text.HTML.TagSoup (Tag, fromAttrib, parseTags)
 import Text.HTML.TagSoup.Match (tagOpenAttrLit)
-import Types (DWord (..), Mp3Url (..), SearchResult (..))
+import Types (Wort (..), Mp3Url (..), SearchResult (..))
 
-getMp3Url :: DWord -> IO SearchResult
-getMp3Url (DWord word) = handle handler $ do
+getMp3Url :: Wort -> IO SearchResult
+getMp3Url (Wort word) = handle handler $ do
     resp <- Wreq.get ("https://www.duden.de/rechtschreibung/" <> (replaceUmlauts word))
     let bodyLBS = resp ^. Wreq.responseBody
     return . extractSearchResult . parseTags $ decodeUtf8 bodyLBS

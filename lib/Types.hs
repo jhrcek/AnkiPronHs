@@ -6,7 +6,7 @@ import Data.Text.Lazy (Text)
 import Database.SQLite.Simple.FromRow (FromRow, field, fromRow)
 import Text.Regex (mkRegex, subRegex)
 
-newtype DWord = DWord String deriving (Eq, Show)
+newtype Wort = Wort String deriving (Eq, Ord, Show)
 newtype Mp3Url = Mp3Url Text deriving (Eq, Show)
 
 data SearchResult
@@ -42,8 +42,8 @@ getY :: AnkiNote -> String
 getY = (!! 3) . getFields
 
 -- | Primary deutsch word represented by the note (only valid for cards with 'wort' tag)
-extractWord :: AnkiNote -> DWord
-extractWord = DWord . deleteSpacesAndSlashes . deleteArticles . deletePartAfterDash . deleteSound . deleteThingsInParens . getDeutsch
+extractWord :: AnkiNote -> Wort
+extractWord = Wort . deleteSpacesAndSlashes . deleteArticles . deletePartAfterDash . deleteSound . deleteThingsInParens . getDeutsch
   where
      deleteSound = delRegex "\\[sound:.*\\.mp3\\]"
      deleteThingsInParens = delRegex "\\([^\\)]*\\)"

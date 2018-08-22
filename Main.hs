@@ -2,20 +2,24 @@
 module Main where
 
 import qualified AnkiDB
+import qualified Data.Set as Set
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
 
-import Control.Monad (zipWithM_)
+import Control.Monad (forever, zipWithM_)
 import Data.Text (Text)
 import Data.Text.Read (decimal)
+import System.Exit (exitSuccess)
+import Types (Wort (Wort), extractWord)
 
 main :: IO ()
-main = do
+main = forever $ do
     op <- pickOperation "Pick operation:"
     case op of
         Validate -> AnkiDB.validateNotes
-        Download -> AnkiDB.getNotesWithoutPron >>= print
+        Download -> downloaWortsWithoutPron
         UpdateDB -> return ()
+        Quit     -> exitSuccess
 
 pickOperation :: Text -> IO Operation
 pickOperation prompt = do
@@ -35,10 +39,32 @@ data Operation
     = Validate
     | Download
     | UpdateDB
+    | Quit
 
 operations :: [(Operation, Text)]
 operations =
     [ (Validate, "Validate notes in Anki DB")
     , (Download, "Download pron mp3 files")
     , (UpdateDB, "Update Anki DB with downloaded pron files")
+    , (Quit, "Quit")
     ]
+
+-- Download operation
+downloaWortsWithoutPron :: IO ()
+downloaWortsWithoutPron = do
+    wordsWithoutPron <- fmap (Set.fromList . fmap extractWord) AnkiDB.getNotesWithoutPron
+    let alreadyDownloaded = Set.empty -- TODO
+    pronNotAvailable <- loadFromFile "pron_not_available.txt"
+    wordsNotFound <- loadFromFile "words_not_found.txt"
+    let wordsToBeDownloaded = foldl1 Set.difference [wordsWithoutPron, pronNotAvailable, alreadyDownloaded, wordsNotFound]
+    putStrLn $ unlines
+        [ "Word count"
+        , "    - without pron in Anki DB: " <> show (length wordsWithoutPron)
+        , "    - pron N/A:                " <> show (length pronNotAvailable)
+        , "    - not found                " <> show (length wordsNotFound)
+        , "    - to be downloaded         " <> show (length wordsToBeDownloaded)
+        ]
+    mapM_ print wordsToBeDownloaded
+  where
+    loadFromFile :: FilePath -> IO (Set.Set Wort)
+    loadFromFile = fmap (Set.fromList . fmap (Wort . Text.unpack) . Text.lines) . Text.readFile
