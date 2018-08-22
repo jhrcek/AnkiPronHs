@@ -128,7 +128,6 @@ ergründen
 Ergänzungsfrage
 Erkenntnis
 Ermittlung
-erschrecken
 Ersparnis
 Ersteindruck
 ertragreich
@@ -179,10 +178,7 @@ Geldtasche
 Gelüste
 Geographie
 geographisch
-gerade
 Gerichtsvollzieher
-gern
-gerne
 Geräuschdämmung
 gesundpflegen
 getüpfelt
@@ -196,7 +192,6 @@ grauen
 Grotte
 großenteils
 großgehen
-gut
 Gänserich
 Gültigkeitsdauer
 Hackbraten
@@ -211,7 +206,6 @@ heute
 hinauszögern
 hinfallen
 hingegen
-hoch
 hochbetagt
 Hoden
 Hornisse
@@ -318,7 +312,6 @@ Orthographie
 Pappbecher
 paradoxerweise
 partnerschaftlich
-Pazifik
 perfid
 Pflaume
 Phiole
@@ -375,7 +368,6 @@ Schreibschrift
 Schultasche
 Schweinebraten
 Schwimmflosse
-schwirren
 Schwule
 Schwüle
 selbst
