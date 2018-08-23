@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-module Duden (search) where
+module Search.Duden (search) where
 
 import qualified Network.Wreq as Wreq
 
@@ -12,7 +12,7 @@ import Data.Text.Lazy.Encoding (decodeUtf8)
 import Network.HTTP.Client (HttpException)
 import Text.HTML.TagSoup (Tag, fromAttrib, parseTags)
 import Text.HTML.TagSoup.Match (tagOpenAttrLit)
-import Types (Wort (..), Mp3Url (..), SearchResult (..))
+import Types (Mp3Url (..), SearchResult (..), Wort (..))
 
 search :: Wort -> IO SearchResult
 search (Wort word) = handle handler $ do

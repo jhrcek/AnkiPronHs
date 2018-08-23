@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings   #-}
 module Main where
 
 import qualified AnkiDB
@@ -6,15 +6,15 @@ import qualified Data.Set as Set
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
 import qualified Download
-import qualified DWDS
+import qualified Search.Duden as Duden
+import qualified Search.DWDS as DWDS
 
 import Control.Monad (forever, zipWithM_)
 import Data.Maybe (catMaybes)
 import Data.Text (Text)
 import Data.Text.Read (decimal)
 import System.Exit (exitSuccess)
-import Text.Printf (printf)
-import Types (Mp3Url, SearchResult (..), Wort (Wort), extractWord)
+import Types (Mp3Url, Wort (Wort), extractWord, searchResultToMaybe)
 
 main :: IO ()
 main = forever $ do
@@ -77,20 +77,15 @@ downloadWordsWithoutPron = do
     loadFromFile :: FilePath -> IO (Set.Set Wort)
     loadFromFile = fmap (Set.fromList . fmap (Wort . Text.unpack) . Text.lines) . Text.readFile
 
+-- TODO rewrite this to use import Data.Monoid (First)
 search :: Wort -> IO (Maybe (Wort, Mp3Url))
 search wort@(Wort w) = do
+    putStrLn $ "Search " <> w
     searchResult <- DWDS.search wort
-    putStr $ printf "%-16s: " w
-    case searchResult of
-        PronFound mp3Url -> do
-            putStrLn $ "found " <> show mp3Url
-            return $ Just (wort, mp3Url)
-        PronNotAvailable -> do
-            putStrLn "pron N/A"
-            return Nothing
-        NotFound -> do
-            putStrLn "not in dictionary"
-            return Nothing
-        Unknown -> do
-            putStrLn "UNEXPECTED ERROR"
-            return Nothing
+    putStrLn $ "  DWDS: " <> show searchResult
+    case searchResultToMaybe wort searchResult of
+        Just x -> return $ Just x
+        Nothing -> do
+            searchResult2 <- Duden.search wort
+            putStrLn $ "  Duden: " <> show searchResult2
+            return $ searchResultToMaybe wort searchResult2

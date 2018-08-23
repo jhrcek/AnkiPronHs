@@ -16,8 +16,8 @@ library
     exposed-modules:
         AnkiDB
         Download
-        Duden
-        DWDS
+        Search.Duden
+        Search.DWDS
         Types
     build-depends:
         base,

@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 module Types where
 
 import Data.Char (isSpace)
@@ -15,7 +16,21 @@ data SearchResult
     | PronNotAvailable
     | NotFound
     | Unknown
-    deriving (Eq, Show)
+    deriving Eq
+
+instance Show SearchResult where
+  show = \case
+      PronFound mp3Url -> show mp3Url
+      PronNotAvailable -> "Pron N/A"
+      NotFound -> "Not in dictionary"
+      Unknown -> "UNEXPECTED ERROR"
+
+searchResultToMaybe :: Wort -> SearchResult -> Maybe (Wort, Mp3Url)
+searchResultToMaybe wort = \case
+    PronFound mp3Url -> Just (wort, mp3Url)
+    PronNotAvailable -> Nothing
+    NotFound         -> Nothing
+    Unknown          -> Nothing
 
 data AnkiNote = AnkiNote
     { noteId   :: Int

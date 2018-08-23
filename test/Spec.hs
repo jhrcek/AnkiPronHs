@@ -1,11 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 import Test.Hspec
 
-import qualified Duden
-import qualified DWDS
+import qualified Search.Duden as Duden
+import qualified Search.DWDS as DWDS
 import qualified Types
 
-import Types (AnkiNote (..), Wort (..), Mp3Url (..), SearchResult (..))
+import Types (AnkiNote (..), Mp3Url (..), SearchResult (..), Wort (..))
 
 main :: IO ()
 main = hspec $ do

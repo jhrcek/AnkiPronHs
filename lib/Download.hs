@@ -11,7 +11,7 @@ import Data.Foldable (traverse_)
 import Data.Set (Set, fromList)
 import System.Directory (doesDirectoryExist, doesFileExist, listDirectory)
 import System.Exit (die)
-import System.FilePath (dropExtension, (</>), (<.>))
+import System.FilePath (dropExtension, (<.>), (</>))
 import System.Process (callProcess)
 import Types (AnkiNote (..), Mp3Url (..), Wort (..), extractWord)
 
