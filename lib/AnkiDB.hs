@@ -1,17 +1,22 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module AnkiDB (validateNotes, getWordNotesWithoutPron) where
-
+module AnkiDB (validateNotes, getWordNotesWithoutPron, addPronReferences) where
 import Data.Foldable (for_)
 import Data.List (isInfixOf, isPrefixOf)
-import Database.SQLite.Simple (Query, query_, withConnection)
+import Database.SQLite.Simple (NamedParam ((:=)), Query, executeNamed, query_,
+                               withConnection)
+import Download (getDownloadedMp3FileName)
 import Text.Regex.TDFA ((=~))
-import Types (AnkiNote (..), getDeutsch, getFields, getY)
+import Types (AnkiNote (..), getDeutsch, getFields,
+              getFieldsWithAddedMp3Reference, getY)
+
+ankiDB :: String
+ankiDB = "collection.anki2"
 
 -- Verifying integrity of anki notes
 validateNotes :: IO ()
-validateNotes  = withConnection "collection.anki2" $ \conn -> do
+validateNotes  = withConnection ankiDB $ \conn -> do
     notes <- query_ conn allNotes :: IO [AnkiNote]
     for_ noteRules $ \(rule, description) -> case filter rule notes of
         [] ->
@@ -73,12 +78,32 @@ fieldMatches regex note = any (=~ regex) $ getFields note
 
 getWordNotesWithoutPron :: IO [AnkiNote]
 getWordNotesWithoutPron =
-    withConnection "collection.anki2" $
+    withConnection ankiDB $
         \conn -> query_ conn wordNotesWithoutPron
+
+addPronReferences :: IO ()
+addPronReferences = do
+    putStrLn "===== ANKI DB UPDATE ====="
+    withConnection ankiDB $ \conn -> do
+        notes <- query_ conn wordNotesWithoutPron
+        for_ notes $ \note -> do
+            maybeMp3File <- getDownloadedMp3FileName note
+            case maybeMp3File of
+                Just mp3File -> do
+                    let newFlds = getFieldsWithAddedMp3Reference mp3File note
+                    putStrLn $ "UPDATE notes SET flds=" <> newFlds <> " WHERE id=" <> show (noteId note)
+                    executeNamed conn addPronQuery [":flds" := newFlds, ":id" := noteId note]
+                Nothing -> return ()
 
 ----- Queries -----
 allNotes :: Query
-allNotes = "SELECT id,flds,tags FROM notes"
+allNotes =
+    "SELECT id,flds,tags FROM notes"
 
 wordNotesWithoutPron :: Query
-wordNotesWithoutPron = "SELECT id,flds,tags FROM notes WHERE tags LIKE '%wort%' AND flds NOT LIKE '%.mp3%';"
+wordNotesWithoutPron =
+    "SELECT id,flds,tags FROM notes WHERE tags LIKE '%wort%' AND flds NOT LIKE '%.mp3%';"
+
+addPronQuery :: Query
+addPronQuery =
+    "UPDATE notes SET flds=:flds WHERE id=:id"

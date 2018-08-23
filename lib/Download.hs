@@ -1,6 +1,7 @@
 module Download
     ( getWordsCorrespondingToDownloadedMp3s
     , downloadMp3s
+    , getDownloadedMp3FileName
     ) where
 
 import qualified Data.Text.Lazy as Text
@@ -8,11 +9,11 @@ import qualified Data.Text.Lazy as Text
 import Control.Monad (unless)
 import Data.Foldable (traverse_)
 import Data.Set (Set, fromList)
-import System.Directory (doesDirectoryExist, listDirectory)
+import System.Directory (doesDirectoryExist, doesFileExist, listDirectory)
 import System.Exit (die)
-import System.FilePath (dropExtension)
+import System.FilePath (dropExtension, (</>), (<.>))
 import System.Process (callProcess)
-import Types (Mp3Url (..), Wort (..))
+import Types (AnkiNote (..), Mp3Url (..), Wort (..), extractWord)
 
 downloadDir :: FilePath
 downloadDir = "Download"
@@ -41,3 +42,14 @@ downloadMp3 (Wort wort, Mp3Url url) =
         , "--output-document=" <> downloadDir <> "/" <> wort <> ".mp3"
         , Text.unpack url
         ]
+
+getDownloadedMp3FileName :: AnkiNote -> IO (Maybe FilePath)
+getDownloadedMp3FileName note = do
+    exists <- doesFileExist mp3Path
+    if exists
+      then return $ Just mp3FileName
+      else return Nothing
+  where
+    (Wort wort) = extractWord note
+    mp3FileName = wort <.> "mp3"
+    mp3Path = downloadDir </> mp3FileName

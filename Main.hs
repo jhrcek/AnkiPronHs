@@ -22,7 +22,7 @@ main = forever $ do
     case op of
         Validate -> AnkiDB.validateNotes
         Download -> downloadWordsWithoutPron
-        UpdateDB -> return ()
+        UpdateDB -> AnkiDB.addPronReferences
         Quit     -> exitSuccess
 
 pickOperation :: Text -> IO Operation

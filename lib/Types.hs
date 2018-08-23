@@ -1,6 +1,7 @@
 module Types where
 
 import Data.Char (isSpace)
+import Data.List (intercalate)
 import Data.List.Split (splitOn)
 import Data.Text.Lazy (Text)
 import Database.SQLite.Simple.FromRow (FromRow, field, fromRow)
@@ -40,6 +41,13 @@ getExamples = (!! 2) . getFields
 
 getY :: AnkiNote -> String
 getY = (!! 3) . getFields
+
+getFieldsWithAddedMp3Reference :: FilePath -> AnkiNote -> String
+getFieldsWithAddedMp3Reference mp3File note =
+    intercalate "\US" [czech, deutschWithMp3Ref, example, y]
+  where
+    [czech, deutsch, example, y] = getFields note
+    deutschWithMp3Ref = deutsch <> "[sound:" <> mp3File <> "]"
 
 -- | Primary deutsch word represented by the note (only valid for cards with 'wort' tag)
 extractWord :: AnkiNote -> Wort
