@@ -4,11 +4,11 @@ module Download
     ) where
 
 import qualified Data.Text.Lazy as Text
-import qualified Data.Text.Lazy.IO as Text
 
 import Control.Monad (unless)
+import Data.Foldable (traverse_)
 import Data.Set (Set, fromList)
-import System.Directory (doesDirectoryExist, listDirectory, removeFile)
+import System.Directory (doesDirectoryExist, listDirectory)
 import System.Exit (die)
 import System.FilePath (dropExtension)
 import System.Process (callProcess)
@@ -28,15 +28,16 @@ getWordsCorrespondingToDownloadedMp3s = do
     mp3Files <- getDownloadedMp3s
     return . fromList $ fmap (Wort . dropExtension) mp3Files
 
-downloadMp3s :: [Mp3Url] -> IO ()
-downloadMp3s [] = return ()
-downloadMp3s urls = do
-    let inputFile = "urls.tmp"
-    Text.writeFile inputFile . Text.unlines $ fmap unMp3Url urls
+downloadMp3s :: [(Wort, Mp3Url)] -> IO ()
+downloadMp3s xs = do
+    putStrLn "===== DOWNLOAD ====="
+    traverse_ downloadMp3 xs
+
+downloadMp3 :: (Wort, Mp3Url) -> IO ()
+downloadMp3 (Wort wort, Mp3Url url) =
     callProcess "wget"
-        [ "--quiet"
+        [ "--no-verbose"
         , "--no-check-certificate"
-        , "--directory-prefix", downloadDir
-        , "--input-file", inputFile
+        , "--output-document=" <> downloadDir <> "/" <> wort <> ".mp3"
+        , Text.unpack url
         ]
-    removeFile inputFile

@@ -13,11 +13,12 @@ import Data.Maybe (catMaybes)
 import Data.Text (Text)
 import Data.Text.Read (decimal)
 import System.Exit (exitSuccess)
+import Text.Printf (printf)
 import Types (Mp3Url, SearchResult (..), Wort (Wort), extractWord)
 
 main :: IO ()
 main = forever $ do
-    op <- pickOperation "Pick operation:"
+    op <- pickOperation "===== PICK OPERATION ====="
     case op of
         Validate -> AnkiDB.validateNotes
         Download -> downloadWordsWithoutPron
@@ -68,22 +69,22 @@ downloadWordsWithoutPron = do
         , "  - pronunciation N/A                : " <> show (length wordsWithoutPronInDict)
         , "  - not found in dictionaries        : " <> show (length wordsNotInDict)
         , "  - to be downloaded                 : " <> show (length wordsToBeDownloaded)
+        ,  "===== SEARCH ====="
         ]
-    urls <- fmap catMaybes . traverse search $ Set.toList wordsToBeDownloaded
-    -- TODO rename after download so that file name matches the word
-    Download.downloadMp3s urls
+    wordMp3Pairs <- fmap catMaybes . traverse search $ Set.toList wordsToBeDownloaded
+    Download.downloadMp3s wordMp3Pairs
   where
     loadFromFile :: FilePath -> IO (Set.Set Wort)
     loadFromFile = fmap (Set.fromList . fmap (Wort . Text.unpack) . Text.lines) . Text.readFile
 
-search :: Wort -> IO (Maybe Mp3Url)
-search w = do
-    searchResult <- DWDS.search w
-    putStr $ "Searching for " <> show w <> " : "
+search :: Wort -> IO (Maybe (Wort, Mp3Url))
+search wort@(Wort w) = do
+    searchResult <- DWDS.search wort
+    putStr $ printf "%-16s: " w
     case searchResult of
         PronFound mp3Url -> do
             putStrLn $ "found " <> show mp3Url
-            return $ Just mp3Url
+            return $ Just (wort, mp3Url)
         PronNotAvailable -> do
             putStrLn "pron N/A"
             return Nothing

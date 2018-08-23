@@ -7,7 +7,7 @@ import Database.SQLite.Simple.FromRow (FromRow, field, fromRow)
 import Text.Regex (mkRegex, subRegex)
 
 newtype Wort = Wort String deriving (Eq, Ord, Show)
-newtype Mp3Url = Mp3Url { unMp3Url :: Text } deriving (Eq, Show)
+newtype Mp3Url = Mp3Url Text deriving (Eq, Show)
 
 data SearchResult
     = PronFound Mp3Url
