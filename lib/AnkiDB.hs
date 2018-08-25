@@ -103,9 +103,9 @@ getAnkiDbFile :: IO FilePath
 getAnkiDbFile =
     getAnkiPath "collection.anki2"
 
-getAnkiMediaDirectory :: IO FilePath
-getAnkiMediaDirectory =
-    getAnkiPath "collection.media"
+-- getAnkiMediaDirectory :: IO FilePath
+-- getAnkiMediaDirectory =
+--     getAnkiPath "collection.media"
 
 getAnkiPath :: FilePath -> IO FilePath
 getAnkiPath fileName =

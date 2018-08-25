@@ -8,7 +8,11 @@ import Data.Text.Lazy (Text)
 import Database.SQLite.Simple.FromRow (FromRow, field, fromRow)
 import Text.Regex (mkRegex, subRegex)
 
-newtype Wort = Wort String deriving (Eq, Ord, Show)
+newtype Wort = Wort String deriving (Eq, Ord)
+
+instance Show Wort where
+    show (Wort w) = w
+
 newtype Mp3Url = Mp3Url Text deriving (Eq, Show)
 
 data SearchResult
@@ -25,12 +29,6 @@ instance Show SearchResult where
       NotFound -> "Not in dictionary"
       Unknown -> "UNEXPECTED ERROR"
 
-searchResultToMaybe :: Wort -> SearchResult -> Maybe (Wort, Mp3Url)
-searchResultToMaybe wort = \case
-    PronFound mp3Url -> Just (wort, mp3Url)
-    PronNotAvailable -> Nothing
-    NotFound         -> Nothing
-    Unknown          -> Nothing
 
 data AnkiNote = AnkiNote
     { noteId   :: Int

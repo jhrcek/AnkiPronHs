@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections     #-}
 module Main where
 
 import qualified AnkiDB
@@ -10,11 +11,10 @@ import qualified Search.Duden as Duden
 import qualified Search.DWDS as DWDS
 
 import Control.Monad (forever, zipWithM_)
-import Data.Maybe (catMaybes)
 import Data.Text (Text)
 import Data.Text.Read (decimal)
 import System.Exit (exitSuccess)
-import Types (Mp3Url, Wort (Wort), extractWord, searchResultToMaybe)
+import Types (SearchResult (..), Wort (Wort), extractWord)
 
 main :: IO ()
 main = forever $ do
@@ -71,21 +71,35 @@ downloadWordsWithoutPron = do
         , "  - to be downloaded                 : " <> show (length wordsToBeDownloaded)
         ,  "===== SEARCH ====="
         ]
-    wordMp3Pairs <- fmap catMaybes . traverse search $ Set.toList wordsToBeDownloaded
-    Download.downloadMp3s wordMp3Pairs
+    wordResultPairs <- traverse search $ Set.toList wordsToBeDownloaded
+    let toDownload       = [ (wort, mp3Url) | (wort, PronFound mp3Url) <- wordResultPairs ]
+        pronNotAvailable = [ wort           | (wort, PronNotAvailable) <- wordResultPairs ]
+        notFound         = [ wort           | (wort, NotFound)         <- wordResultPairs ]
+
+    Download.downloadMp3s toDownload
+
+    downloaded <- Set.toList <$> Download.getWordsCorrespondingToDownloadedMp3s
+
+    putStrLn $ unlines
+        [ "===== DOWNLOAD SUMMARY ====="
+        , "Downloaded         : " <> show downloaded
+        , "Pron not available : " <> show pronNotAvailable
+        , "Not found          : " <> show notFound
+        ]
   where
     loadFromFile :: FilePath -> IO (Set.Set Wort)
     loadFromFile = fmap (Set.fromList . fmap (Wort . Text.unpack) . Text.lines) . Text.readFile
 
--- TODO rewrite this to use import Data.Monoid (First)
-search :: Wort -> IO (Maybe (Wort, Mp3Url))
-search wort@(Wort w) = do
-    putStrLn $ "Search " <> w
-    searchResult <- DWDS.search wort
-    putStrLn $ "  DWDS: " <> show searchResult
-    case searchResultToMaybe wort searchResult of
-        Just x -> return $ Just x
-        Nothing -> do
-            searchResult2 <- Duden.search wort
-            putStrLn $ "  Duden: " <> show searchResult2
-            return $ searchResultToMaybe wort searchResult2
+search :: Wort -> IO (Wort, SearchResult)
+search wort = do
+    putStrLn $ "Search " <> show wort
+    dwdsResult <- DWDS.search wort
+    putStrLn $ "  DWDS: " <> show dwdsResult
+    (wort,) <$> case dwdsResult of
+        PronFound _ -> return dwdsResult
+        _ -> do
+            dudenResult <- Duden.search wort
+            putStrLn $ "  Duden: " <> show dudenResult
+            case dudenResult of
+                PronFound _ -> return dudenResult
+                _           -> return dwdsResult

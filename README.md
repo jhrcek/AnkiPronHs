@@ -6,4 +6,3 @@ and adds reference to the file to anki database.
 
 # TODO
 - copy downloaded mp3s to Anki collections.media
-- print download summary
