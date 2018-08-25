@@ -2,21 +2,22 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module AnkiDB (validateNotes, getWordNotesWithoutPron, addPronReferences) where
+
 import Data.Foldable (for_)
 import Data.List (isInfixOf, isPrefixOf)
-import Database.SQLite.Simple (NamedParam ((:=)), Query, executeNamed, query_,
-                               withConnection)
+import Database.SQLite.Simple (Connection, NamedParam ((:=)), Query,
+                               executeNamed, query_, withConnection)
 import Download (getDownloadedMp3FileName)
+import System.Environment (lookupEnv)
+import System.Exit (die)
+import System.FilePath ((</>))
 import Text.Regex.TDFA ((=~))
 import Types (AnkiNote (..), getDeutsch, getFields,
               getFieldsWithAddedMp3Reference, getY)
 
-ankiDB :: String
-ankiDB = "collection.anki2"
-
--- Verifying integrity of anki notes
+-- Verifying integrity of Anki notes
 validateNotes :: IO ()
-validateNotes  = withConnection ankiDB $ \conn -> do
+validateNotes = withAnkiDB $ \conn -> do
     notes <- query_ conn allNotes :: IO [AnkiNote]
     for_ noteRules $ \(rule, description) -> case filter rule notes of
         [] ->
@@ -69,7 +70,6 @@ hasSpan = containsUndesired "<span"
 hasLeadingOrTrailingWhiteSpaces :: NoteFilter
 hasLeadingOrTrailingWhiteSpaces = fieldMatches "^ +.*|.* +$"
 
------ Filter helpers -----
 containsUndesired :: String -> NoteFilter
 containsUndesired str note = str `isInfixOf` noteFlds note
 
@@ -78,13 +78,12 @@ fieldMatches regex note = any (=~ regex) $ getFields note
 
 getWordNotesWithoutPron :: IO [AnkiNote]
 getWordNotesWithoutPron =
-    withConnection ankiDB $
-        \conn -> query_ conn wordNotesWithoutPron
+    withAnkiDB (\conn -> query_ conn wordNotesWithoutPron)
 
 addPronReferences :: IO ()
 addPronReferences = do
     putStrLn "===== ANKI DB UPDATE ====="
-    withConnection ankiDB $ \conn -> do
+    withAnkiDB $ \conn -> do
         notes <- query_ conn wordNotesWithoutPron
         for_ notes $ \note -> do
             maybeMp3File <- getDownloadedMp3FileName note
@@ -94,6 +93,25 @@ addPronReferences = do
                     putStrLn $ "UPDATE notes SET flds=" <> newFlds <> " WHERE id=" <> show (noteId note)
                     executeNamed conn addPronQuery [":flds" := newFlds, ":id" := noteId note]
                 Nothing -> return ()
+
+withAnkiDB :: (Connection -> IO a) -> IO a
+withAnkiDB action = do
+    ankiDB <- getAnkiDbFile
+    withConnection ankiDB action
+
+getAnkiDbFile :: IO FilePath
+getAnkiDbFile =
+    getAnkiPath "collection.anki2"
+
+getAnkiMediaDirectory :: IO FilePath
+getAnkiMediaDirectory =
+    getAnkiPath "collection.media"
+
+getAnkiPath :: FilePath -> IO FilePath
+getAnkiPath fileName =
+    lookupEnv "HOME" >>= maybe
+        (die $ "Can't assemble path to " <> fileName <> ", environment variable HOME is not defined")
+        (\home -> return $ home </> "Dropbox/Reference/Anki/User 1" </> fileName)
 
 ----- Queries -----
 allNotes :: Query

@@ -49,7 +49,7 @@ operations :: [(Operation, Text)]
 operations =
     [ (Validate, "Validate notes in Anki DB")
     , (Download, "Download pron mp3 files")
-    , (UpdateDB, "Update Anki DB with downloaded pron files")
+    , (UpdateDB, "Update Anki DB and copy mp3s media folder")
     , (Quit, "Quit")
     ]
 
