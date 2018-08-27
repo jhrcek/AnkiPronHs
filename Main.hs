@@ -11,6 +11,7 @@ import qualified Search.Duden as Duden
 import qualified Search.DWDS as DWDS
 
 import Control.Monad (forever, zipWithM_)
+import Data.Set (Set)
 import Data.Text (Text)
 import Data.Text.Read (decimal)
 import System.Exit (exitSuccess)
@@ -56,21 +57,7 @@ operations =
 -- Download operation
 downloadWordsWithoutPron :: IO ()
 downloadWordsWithoutPron = do
-    wordsWithoutPronInAnkiDb <- fmap (Set.fromList . fmap extractWord) AnkiDB.getWordNotesWithoutPron
-    wordsAlreadyDownloaded <- Download.getWordsCorrespondingToDownloadedMp3s
-    wordsWithoutPronInDict <- loadFromFile "words_without_pron_in_dict"
-    wordsNotInDict <- loadFromFile "words_not_in_dict"
-    let wordsToIgnore = Set.unions [wordsAlreadyDownloaded, wordsWithoutPronInDict, wordsNotInDict]
-        wordsToBeDownloaded = Set.difference wordsWithoutPronInAnkiDb wordsToIgnore
-    putStrLn $ unlines
-        [ "Word count"
-        , "  - without pronunciation in Anki DB : " <> show (length wordsWithoutPronInAnkiDb)
-        , "  - already downloaded               : " <> show (length wordsAlreadyDownloaded)
-        , "  - pronunciation N/A                : " <> show (length wordsWithoutPronInDict)
-        , "  - not found in dictionaries        : " <> show (length wordsNotInDict)
-        , "  - to be downloaded                 : " <> show (length wordsToBeDownloaded)
-        ,  "===== SEARCH ====="
-        ]
+    wordsToBeDownloaded <- determineWhatNeedsToBeDownloaded
     wordResultPairs <- traverse search $ Set.toList wordsToBeDownloaded
     let toDownload       = [ (wort, mp3Url) | (wort, PronFound mp3Url) <- wordResultPairs ]
         pronNotAvailable = [ wort           | (wort, PronNotAvailable) <- wordResultPairs ]
@@ -86,9 +73,6 @@ downloadWordsWithoutPron = do
         , "Pron not available : " <> show pronNotAvailable
         , "Not found          : " <> show notFound
         ]
-  where
-    loadFromFile :: FilePath -> IO (Set.Set Wort)
-    loadFromFile = fmap (Set.fromList . fmap (Wort . Text.unpack) . Text.lines) . Text.readFile
 
 search :: Wort -> IO (Wort, SearchResult)
 search wort = do
@@ -103,3 +87,25 @@ search wort = do
             case dudenResult of
                 PronFound _ -> return dudenResult
                 _           -> return dwdsResult
+
+determineWhatNeedsToBeDownloaded :: IO (Set Wort)
+determineWhatNeedsToBeDownloaded = do
+    wordsWithoutPronInAnkiDb <- fmap (Set.fromList . fmap extractWord) AnkiDB.getWordNotesWithoutPron
+    wordsAlreadyDownloaded <- Download.getWordsCorrespondingToDownloadedMp3s
+    wordsWithoutPronInDict <- loadFromFile "words_without_pron_in_dict"
+    wordsNotInDict <- loadFromFile "words_not_in_dict"
+    let wordsToIgnore = Set.unions [wordsAlreadyDownloaded, wordsWithoutPronInDict, wordsNotInDict]
+        wordsToBeDownloaded = Set.difference wordsWithoutPronInAnkiDb wordsToIgnore
+    putStrLn $ unlines
+        [ "Word count"
+        , "  - without pronunciation in Anki DB : " <> show (length wordsWithoutPronInAnkiDb)
+        , "  - already downloaded               : " <> show (length wordsAlreadyDownloaded)
+        , "  - pronunciation N/A                : " <> show (length wordsWithoutPronInDict)
+        , "  - not found in dictionaries        : " <> show (length wordsNotInDict)
+        , "  - to be downloaded                 : " <> show (length wordsToBeDownloaded)
+        ,  "===== SEARCH ====="
+        ]
+    return wordsToBeDownloaded
+  where
+    loadFromFile :: FilePath -> IO (Set.Set Wort)
+    loadFromFile = fmap (Set.fromList . fmap (Wort . Text.unpack) . Text.lines) . Text.readFile
