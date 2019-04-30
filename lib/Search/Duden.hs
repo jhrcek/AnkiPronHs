@@ -41,8 +41,8 @@ extractSearchResult tags
 
 extractMp3Url :: [Tag Text] -> [Mp3Url]
 extractMp3Url =
-    fmap (Mp3Url . fromAttrib "href") . filter (tagOpenAttrLit "a" ("class", "audio"))
+    fmap (Mp3Url . fromAttrib "href") . filter (tagOpenAttrLit "a" ("class", "pronunciation-guide__sound"))
 
 isWordWithoutPron :: [Tag Text] -> Bool
 isWordWithoutPron =
-    any (tagOpenAttrLit "div" ("class", "entry"))
+    any (tagOpenAttrLit "div" ("class", "lemma"))
