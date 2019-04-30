@@ -114,13 +114,14 @@ getAnkiPath fileName =
         (\home -> return $ home </> "Dropbox/Reference/Anki/User 1" </> fileName)
 
 ----- Queries -----
+-- notes specify mid (model id) based on which we determine that the note is part of HrkDeutsch
 allNotes :: Query
 allNotes =
-    "SELECT id,flds,tags FROM notes"
+    "SELECT id,flds,tags FROM notes WHERE mid=1852153645"
 
 wordNotesWithoutPron :: Query
 wordNotesWithoutPron =
-    "SELECT id,flds,tags FROM notes WHERE tags LIKE '%wort%' AND flds NOT LIKE '%.mp3%';"
+    "SELECT id,flds,tags FROM notes WHERE tags LIKE '%wort%' AND flds NOT LIKE '%.mp3%' AND mid=1852153645"
 
 addPronQuery :: Query
 addPronQuery =
