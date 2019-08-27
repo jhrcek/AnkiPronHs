@@ -46,9 +46,9 @@ downloadMp3 (Wort wort, Mp3Url url) =
 getDownloadedMp3FileName :: AnkiNote -> IO (Maybe FilePath)
 getDownloadedMp3FileName note = do
     exists <- doesFileExist mp3Path
-    if exists
-      then return $ Just mp3FileName
-      else return Nothing
+    pure $ if exists
+      then Just mp3FileName
+      else Nothing
   where
     (Wort wort) = extractWord note
     mp3FileName = wort <.> "mp3"
