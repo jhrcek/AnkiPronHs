@@ -1,13 +1,19 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module AnkiDB (validateNotes, getWordNotesWithoutPron, addPronReferences) where
+module AnkiDB
+  ( validateNotes
+  , getWordNotesWithoutPron
+  , addPronReferences
+  , moveMp3sToMediaDir
+  ) where
 
 import Data.Foldable (for_)
 import Data.List (isInfixOf, isPrefixOf)
 import Database.SQLite.Simple (Connection, NamedParam ((:=)), Query,
                                executeNamed, query_, withConnection)
-import Download (getDownloadedMp3FileName)
+import Download (downloadDir, getDownloadedMp3FileName, getDownloadedMp3s)
+import System.Directory (renamePath)
 import System.Environment (lookupEnv)
 import System.Exit (die)
 import System.FilePath ((</>))
@@ -103,9 +109,17 @@ getAnkiDbFile :: IO FilePath
 getAnkiDbFile =
     getAnkiPath "collection.anki2"
 
--- getAnkiMediaDirectory :: IO FilePath
--- getAnkiMediaDirectory =
---     getAnkiPath "collection.media"
+moveMp3sToMediaDir :: IO ()
+moveMp3sToMediaDir = do
+    mp3s <- getDownloadedMp3s
+    targetDir <- getAnkiMediaDirectory
+    putStrLn $ "Moving " <> show (length mp3s) <> " mp3 files to " <> targetDir
+    for_ mp3s $ \mp3 -> do
+        renamePath (downloadDir </> mp3) (targetDir </> mp3)
+
+getAnkiMediaDirectory :: IO FilePath
+getAnkiMediaDirectory =
+     getAnkiPath "collection.media"
 
 getAnkiPath :: FilePath -> IO FilePath
 getAnkiPath fileName =

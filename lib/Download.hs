@@ -1,7 +1,9 @@
 module Download
     ( getWordsCorrespondingToDownloadedMp3s
     , downloadMp3s
+    , downloadDir
     , getDownloadedMp3FileName
+    , getDownloadedMp3s
     ) where
 
 import qualified Data.Text.Lazy as Text

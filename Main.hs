@@ -23,7 +23,9 @@ main = forever $ do
     case op of
         Validate -> AnkiDB.validateNotes
         Download -> downloadWordsWithoutPron
-        UpdateDB -> AnkiDB.addPronReferences
+        UpdateDB -> do
+            AnkiDB.addPronReferences
+            AnkiDB.moveMp3sToMediaDir
         Quit     -> exitSuccess
 
 pickOperation :: Text -> IO Operation
