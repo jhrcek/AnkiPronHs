@@ -13,9 +13,7 @@ import Data.List (isInfixOf, isPrefixOf)
 import Database.SQLite.Simple (Connection, NamedParam ((:=)), Query,
                                executeNamed, query_, withConnection)
 import Download (downloadDir, getDownloadedMp3FileName, getDownloadedMp3s)
-import System.Directory (renamePath)
-import System.Environment (lookupEnv)
-import System.Exit (die)
+import System.Directory (getHomeDirectory, renamePath)
 import System.FilePath ((</>))
 import Text.Regex.TDFA ((=~))
 import Types (AnkiNote (..), getDeutsch, getFields,
@@ -122,10 +120,9 @@ getAnkiMediaDirectory =
      getAnkiPath "collection.media"
 
 getAnkiPath :: FilePath -> IO FilePath
-getAnkiPath fileName =
-    lookupEnv "HOME" >>= maybe
-        (die $ "Can't assemble path to " <> fileName <> ", environment variable HOME is not defined")
-        (\home -> return $ home </> "Dropbox/Reference/Anki/User 1" </> fileName)
+getAnkiPath fileName = do
+    home <- getHomeDirectory
+    pure $ home </> "Dropbox/Reference/Anki/User 1" </> fileName
 
 ----- Queries -----
 -- notes specify mid (model id) based on which we determine that the note is part of HrkDeutsch
