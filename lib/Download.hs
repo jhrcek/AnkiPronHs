@@ -9,6 +9,7 @@ module Download
 import qualified Data.Text.Lazy as Text
 
 import Control.Monad (unless)
+import Control.Exception (catch, IOException)
 import Data.Foldable (traverse_)
 import Data.Set (Set, fromList)
 import System.Directory (doesDirectoryExist, doesFileExist, listDirectory)
@@ -44,6 +45,12 @@ downloadMp3 (Wort wort, Mp3Url url) =
         , "--output-document=" <> downloadDir <> "/" <> wort <> ".mp3"
         , Text.unpack url
         ]
+     `catch` logIOException
+     where 
+        logIOException :: IOException -> IO ()
+        logIOException e =
+            putStrLn $ "Failed to download " <> Text.unpack url
+                       <> "\n  the exception was '" <> show e <> "'"
 
 getDownloadedMp3FileName :: AnkiNote -> IO (Maybe FilePath)
 getDownloadedMp3FileName note = do

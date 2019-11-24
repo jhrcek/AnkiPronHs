@@ -4,6 +4,7 @@ import Test.Hspec
 import qualified Search.Duden as Duden
 import qualified Search.DWDS as DWDS
 import qualified Types
+import qualified Download 
 
 import Types (AnkiNote (..), Mp3Url (..), SearchResult (..), Wort (..))
 
@@ -40,3 +41,6 @@ main = hspec $ do
             Duden.search (Wort "Ökumene") `shouldReturn` PronNotAvailable
         it "should return NotFound when word not in dictionary" $
             Duden.search (Wort "nonexistent") `shouldReturn` NotFound
+    describe "downloadMp3s" $ do
+        it "should not trow an exception when download fails" $
+            Download.downloadMp3s [((Wort "DUMMY"), (Mp3Url "https://cdn.duden.de/_media_/audio/ID4521392_440923517.mp3"))]
