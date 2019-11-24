@@ -35,7 +35,7 @@ main = hspec $ do
 
     describe "Duden.search" $ do
         it "should retrieve URL of pron mp3" $
-            Duden.search (Wort "Bruder") `shouldReturn` PronFound (Mp3Url "https://cdn.duden.de/_media_/audio/ID4113233_375377226.mp3")
+            Duden.search (Wort "Straße") `shouldReturn` PronFound (Mp3Url "https://cdn.duden.de/_media_/audio/ID4120277_502978504.mp3")
         it "should return PronNotAvailable when word has no pron" $
             Duden.search (Wort "Ökumene") `shouldReturn` PronNotAvailable
         it "should return NotFound when word not in dictionary" $

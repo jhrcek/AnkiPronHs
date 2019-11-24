@@ -9,28 +9,39 @@ import Control.Exception (handle)
 import Control.Lens ((^.))
 import Data.Text.Lazy (Text)
 import Data.Text.Lazy.Encoding (decodeUtf8)
-import Network.HTTP.Client (HttpException)
+import Network.HTTP.Client (HttpException (..), HttpExceptionContent (..))
+import Network.Wreq (responseStatus, statusCode)
 import Text.HTML.TagSoup (Tag, fromAttrib, parseTags)
 import Text.HTML.TagSoup.Match (tagOpenAttrLit)
 import Types (Mp3Url (..), SearchResult (..), Wort (..))
 
 search :: Wort -> IO SearchResult
 search (Wort word) = handle handler $ do
-    resp <- Wreq.get ("https://www.duden.de/rechtschreibung/" <> replaceUmlauts word)
+    resp <- Wreq.get ("https://www.duden.de/rechtschreibung/" <> replaceGermanChars word)
     let bodyLBS = resp ^. Wreq.responseBody
     return . extractSearchResult . parseTags $ decodeUtf8 bodyLBS
   where
-    handler (_exception :: HttpException) = return NotFound
+    handler :: HttpException -> IO SearchResult
+    handler ex = do
+      case ex of
+        HttpExceptionRequest _request content -> case content of
+          ConnectionTimeout -> putStrLn "Request timed out"
+          StatusCodeException response _body -> putStrLn $ "Request failed, statusCode = " <> show (response ^. responseStatus . statusCode)
+          _ -> putStrLn $ "Other exception: " <> show ex
+        InvalidUrlException _ _ -> print ex
+      pure NotFound
+
 
 -- Duden is replacing
-replaceUmlauts :: String -> String
-replaceUmlauts = concatMap (\case
+replaceGermanChars :: String -> String
+replaceGermanChars = concatMap (\case
     'Ä' -> "Ae"
     'ä' -> "ae"
     'Ö' -> "Oe"
     'ö' -> "oe"
     'Ü' -> "Ue"
     'ü' -> "ue"
+    'ß' -> "sz"
     c   -> [c])
 
 extractSearchResult :: [Tag Text] -> SearchResult
