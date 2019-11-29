@@ -48,9 +48,9 @@ downloadMp3 (Wort wort, Mp3Url url) =
      `catch` logIOException
      where 
         logIOException :: IOException -> IO ()
-        logIOException e =
-            putStrLn $ "Failed to download " <> Text.unpack url
-                       <> "\n  the exception was '" <> show e <> "'"
+        logIOException _ =
+            putStrLn $ "Failed to download pronunciation for " <> wort <> " from " <> Text.unpack url
+                       
 
 getDownloadedMp3FileName :: AnkiNote -> IO (Maybe FilePath)
 getDownloadedMp3FileName note = do
