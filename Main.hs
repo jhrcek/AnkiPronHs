@@ -26,6 +26,7 @@ main = forever $ do
         UpdateDB -> do
             AnkiDB.addPronReferences
             AnkiDB.moveMp3sToMediaDir
+        PlaySounds -> Download.playDownloaded
         Quit     -> exitSuccess
 
 pickOperation :: Text -> IO Operation
@@ -45,6 +46,7 @@ pickOperation prompt = do
 data Operation
     = Validate
     | Download
+    | PlaySounds
     | UpdateDB
     | Quit
 
@@ -52,6 +54,7 @@ operations :: [(Operation, Text)]
 operations =
     [ (Validate, "Validate notes in Anki DB")
     , (Download, "Download pron mp3 files")
+    , (PlaySounds, "Play downloaded sounds")
     , (UpdateDB, "Update Anki DB and copy mp3s media folder")
     , (Quit, "Quit")
     ]

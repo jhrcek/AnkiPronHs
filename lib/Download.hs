@@ -4,6 +4,7 @@ module Download
     , downloadDir
     , getDownloadedMp3FileName
     , getDownloadedMp3s
+    , playDownloaded
     ) where
 
 import qualified Data.Text.Lazy as Text
@@ -50,7 +51,12 @@ downloadMp3 (Wort wort, Mp3Url url) =
         logIOException :: IOException -> IO ()
         logIOException _ =
             putStrLn $ "Failed to download pronunciation for " <> wort <> " from " <> Text.unpack url
-                       
+
+playDownloaded :: IO ()
+playDownloaded = do
+    mp3filenames <- getDownloadedMp3s 
+    let mp3s = fmap (downloadDir </>) mp3filenames
+    callProcess "mplayer" mp3s
 
 getDownloadedMp3FileName :: AnkiNote -> IO (Maybe FilePath)
 getDownloadedMp3FileName note = do
