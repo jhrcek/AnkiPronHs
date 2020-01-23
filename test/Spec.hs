@@ -41,6 +41,6 @@ main = hspec $ do
             Duden.search (Wort "Ökumene") `shouldReturn` PronNotAvailable
         it "should return NotFound when word not in dictionary" $
             Duden.search (Wort "nonexistent") `shouldReturn` NotFound
-    describe "downloadMp3s" $ do
+    describe "downloadMp3s" $
         it "should not trow an exception when download fails" $
-            Download.downloadMp3s [((Wort "DUMMY"), (Mp3Url "https://cdn.duden.de/_media_/audio/ID4521392_440923517.mp3"))]
+            Download.downloadMp3s [(Wort "DUMMY", Mp3Url "https://cdn.duden.de/_media_/audio/ID4521392_440923517.mp3")]

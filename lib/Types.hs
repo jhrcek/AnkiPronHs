@@ -1,6 +1,9 @@
 {-# LANGUAGE LambdaCase #-}
 module Types where
 
+import qualified Data.Text as Text
+import qualified Data.Text.ICU as TI
+
 import Data.Char (isSpace)
 import Data.List (intercalate)
 import Data.List.Split (splitOn)
@@ -9,6 +12,9 @@ import Database.SQLite.Simple.FromRow (FromRow, field, fromRow)
 import Text.Regex (mkRegex, subRegex)
 
 newtype Wort = Wort String deriving (Eq, Ord)
+
+compareWordsCaseInsensitive :: Wort -> Wort -> Ordering
+compareWordsCaseInsensitive (Wort a) (Wort b) = TI.compare [TI.CompareIgnoreCase] (Text.pack a) (Text.pack b)
 
 instance Show Wort where
     show (Wort w) = w

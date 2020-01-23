@@ -9,13 +9,14 @@ import qualified Data.Text.IO as Text
 import qualified Download
 import qualified Search.Duden as Duden
 import qualified Search.DWDS as DWDS
+import qualified Data.List as List
 
-import Control.Monad (forever, zipWithM_)
+import Control.Monad (forever, zipWithM_, unless, when)
 import Data.Set (Set)
 import Data.Text (Text)
 import Data.Text.Read (decimal)
 import System.Exit (exitSuccess)
-import Types (SearchResult (..), Wort (Wort), extractWord)
+import Types (SearchResult (..), Wort (Wort), extractWord, compareWordsCaseInsensitive)
 
 main :: IO ()
 main = forever $ do
@@ -78,6 +79,8 @@ downloadWordsWithoutPron = do
         , "Pron not available : " <> show pronNotAvailable
         , "Not found          : " <> show notFound
         ]
+    
+    updateFilterFiles pronNotAvailable notFound
 
 search :: Wort -> IO (Wort, SearchResult)
 search wort = do
@@ -97,8 +100,8 @@ determineWhatNeedsToBeDownloaded :: IO (Set Wort)
 determineWhatNeedsToBeDownloaded = do
     wordsWithoutPronInAnkiDb <- fmap (Set.fromList . fmap extractWord) AnkiDB.getWordNotesWithoutPron
     wordsAlreadyDownloaded <- Download.getWordsCorrespondingToDownloadedMp3s
-    wordsWithoutPronInDict <- loadFromFile "words_without_pron_in_dict"
-    wordsNotInDict <- loadFromFile "words_not_in_dict"
+    wordsWithoutPronInDict <- loadWordsFromFile wordsWithoutPronFile
+    wordsNotInDict <- loadWordsFromFile wordsNotFoundFile
     let wordsToIgnore = Set.unions [wordsAlreadyDownloaded, wordsWithoutPronInDict, wordsNotInDict]
         wordsToBeDownloaded = Set.difference wordsWithoutPronInAnkiDb wordsToIgnore
     putStrLn $ unlines
@@ -111,6 +114,29 @@ determineWhatNeedsToBeDownloaded = do
         ,  "===== SEARCH ====="
         ]
     return wordsToBeDownloaded
-  where
-    loadFromFile :: FilePath -> IO (Set.Set Wort)
-    loadFromFile = fmap (Set.fromList . fmap (Wort . Text.unpack) . Text.lines) . Text.readFile
+
+loadWordsFromFile :: FilePath -> IO (Set Wort)
+loadWordsFromFile = fmap (Set.fromList . fmap (Wort . Text.unpack) . Text.lines) . Text.readFile
+
+updateFilterFiles :: [Wort] -> [Wort] -> IO ()
+updateFilterFiles pronNotAvailable notFound =
+    when ((length pronNotAvailable + length notFound) > 0) $ do
+      putStrLn "Would you like to update filter files? [y/N]"
+      resp <- getLine
+      when (resp `elem` ["y","Y"]) $ do
+        updateWordsFile wordsWithoutPronFile pronNotAvailable
+        updateWordsFile wordsNotFoundFile notFound
+        
+updateWordsFile :: FilePath -> [Wort] -> IO ()
+updateWordsFile f wordsToAdd =
+    unless (null wordsToAdd) $ do
+        ws <- loadWordsFromFile f
+        let newWords = fmap show . List.sortBy compareWordsCaseInsensitive . Set.toList $ Set.union ws $ Set.fromList wordsToAdd
+        writeFile f (unlines newWords)
+        putStrLn $ "Added " <> show (length wordsToAdd) <> " words to a file " <> f
+
+wordsWithoutPronFile :: FilePath
+wordsWithoutPronFile = "words_without_pron_in_dict"
+
+wordsNotFoundFile :: FilePath
+wordsNotFoundFile = "words_not_in_dict"

@@ -112,7 +112,7 @@ moveMp3sToMediaDir = do
     mp3s <- getDownloadedMp3s
     targetDir <- getAnkiMediaDirectory
     putStrLn $ "Moving " <> show (length mp3s) <> " mp3 files to " <> targetDir
-    for_ mp3s $ \mp3 -> do
+    for_ mp3s $ \mp3 ->
         renamePath (downloadDir </> mp3) (targetDir </> mp3)
 
 getAnkiMediaDirectory :: IO FilePath
