@@ -1,12 +1,12 @@
 {-# LANGUAGE LambdaCase #-}
-module Types where
 
-import qualified Data.Text as Text
-import qualified Data.Text.ICU as TI
+module Types where
 
 import Data.Char (isSpace)
 import Data.List (intercalate)
 import Data.List.Split (splitOn)
+import qualified Data.Text as Text
+import qualified Data.Text.ICU as TI
 import Data.Text.Lazy (Text)
 import Database.SQLite.Simple.FromRow (FromRow, field, fromRow)
 import Text.Regex (mkRegex, subRegex)
@@ -17,30 +17,30 @@ compareWordsCaseInsensitive :: Wort -> Wort -> Ordering
 compareWordsCaseInsensitive (Wort a) (Wort b) = TI.compare [TI.CompareIgnoreCase] (Text.pack a) (Text.pack b)
 
 instance Show Wort where
-    show (Wort w) = w
+  show (Wort w) = w
 
 newtype Mp3Url = Mp3Url Text deriving (Eq, Show)
 
 data SearchResult
-    = PronFound Mp3Url
-    | PronNotAvailable
-    | NotFound
-    | Unknown
-    deriving Eq
+  = PronFound Mp3Url
+  | PronNotAvailable
+  | NotFound
+  | Unknown
+  deriving (Eq)
 
 instance Show SearchResult where
   show = \case
-      PronFound mp3Url -> show mp3Url
-      PronNotAvailable -> "Pron N/A"
-      NotFound -> "Not in dictionary"
-      Unknown -> "UNEXPECTED ERROR"
-
+    PronFound mp3Url -> show mp3Url
+    PronNotAvailable -> "Pron N/A"
+    NotFound -> "Not in dictionary"
+    Unknown -> "UNEXPECTED ERROR"
 
 data AnkiNote = AnkiNote
-    { noteId   :: Int
-    , noteFlds :: String
-    , noteTags :: String
-    } deriving (Show)
+  { noteId :: Int,
+    noteFlds :: String,
+    noteTags :: String
+  }
+  deriving (Show)
 
 instance FromRow AnkiNote where
   fromRow = AnkiNote <$> field <*> field <*> field
@@ -63,7 +63,7 @@ getY = (!! 3) . getFields
 
 getFieldsWithAddedMp3Reference :: FilePath -> AnkiNote -> String
 getFieldsWithAddedMp3Reference mp3File note =
-    intercalate "\US" [czech, deutschWithMp3Ref, example, y]
+  intercalate "\US" [czech, deutschWithMp3Ref, example, y]
   where
     [czech, deutsch, example, y] = getFields note
     deutschWithMp3Ref = deutsch <> "[sound:" <> mp3File <> "]"
@@ -72,9 +72,9 @@ getFieldsWithAddedMp3Reference mp3File note =
 extractWord :: AnkiNote -> Wort
 extractWord = Wort . deleteSpacesAndSlashes . deleteArticles . deletePartAfterDash . deleteSound . deleteThingsInParens . getDeutsch
   where
-     deleteSound = delRegex "\\[sound:.*\\.mp3\\]"
-     deleteThingsInParens = delRegex "\\([^\\)]*\\)"
-     deletePartAfterDash = delRegex " - .*"
-     deleteArticles s = let ws = words s in if length ws > 1 then last ws else s
-     deleteSpacesAndSlashes = filter (\c -> not (isSpace c) && c /= '/')
-     delRegex regex input = subRegex (mkRegex regex) input "" --subst regex by empty String
+    deleteSound = delRegex "\\[sound:.*\\.mp3\\]"
+    deleteThingsInParens = delRegex "\\([^\\)]*\\)"
+    deletePartAfterDash = delRegex " - .*"
+    deleteArticles s = let ws = words s in if length ws > 1 then last ws else s
+    deleteSpacesAndSlashes = filter (\c -> not (isSpace c) && c /= '/')
+    delRegex regex input = subRegex (mkRegex regex) input "" --subst regex by empty String
