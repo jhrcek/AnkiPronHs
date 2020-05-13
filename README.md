@@ -8,6 +8,6 @@ and adds reference to the file to anki database.
 
 ```bash
 sudo dnf install libicu-devel
-stack build
+stack install --pedantic --local-bin-path ~/Dropbox/Softy/AnkiPron/
 ```
 
