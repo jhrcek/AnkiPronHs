@@ -1,16 +1,18 @@
-name: anki
-version: 0.1.0.0
 cabal-version: >=1.10
-build-type: Simple
-license: BSD3
-license-file: LICENSE
-copyright: 2018 Jan Hrček
-maintainer: example@example.com
-homepage: https://github.com/jhrcek/AnkiPron
-synopsis: Tool to download pronunciation MP3s and upload them to anki decks
-description: Please see README.md
-category: Web
-author: Jan Hrček
+name:          anki
+version:       0.1.0.0
+license:       BSD3
+license-file:  LICENSE
+copyright:     2020 Jan Hrček
+maintainer:    example@example.com
+author:        Jan Hrček
+homepage:      https://github.com/jhrcek/AnkiPron
+synopsis:
+    Tool to download pronunciation MP3s and upload them to anki decks
+
+description:   Please see README.md
+category:      Web
+build-type:    Simple
 
 library
     exposed-modules:
@@ -19,6 +21,10 @@ library
         Search.Duden
         Search.DWDS
         Types
+
+    hs-source-dirs:   lib
+    default-language: Haskell2010
+    ghc-options:      -O2 -Wall
     build-depends:
         base,
         bytestring,
@@ -36,27 +42,24 @@ library
         text,
         text-icu,
         wreq
-    default-language: Haskell2010
-    hs-source-dirs: lib
-    ghc-options: -O2 -Wall
 
 executable anki-exe
-    main-is: Main.hs
-    hs-source-dirs: .
-    ghc-options: -O2 -Wall
+    main-is:          Main.hs
+    hs-source-dirs:   .
+    default-language: Haskell2010
+    ghc-options:      -O2 -Wall
     build-depends:
         anki,
         base,
         containers,
         text
-    default-language: Haskell2010
 
-test-suite  anki-test
-    type: exitcode-stdio-1.0
-    main-is: Spec.hs
+test-suite anki-test
+    type:             exitcode-stdio-1.0
+    main-is:          Spec.hs
+    hs-source-dirs:   test
+    default-language: Haskell2010
     build-depends:
         anki,
         base,
         hspec
-    default-language: Haskell2010
-    hs-source-dirs: test
