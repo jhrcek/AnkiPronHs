@@ -1,10 +1,10 @@
-cabal-version: >=1.10
+cabal-version: 3.0
 name:          anki
 version:       0.1.0.0
-license:       BSD3
+license:       BSD-3-Clause
 license-file:  LICENSE
 copyright:     2020 Jan Hrček
-maintainer:    example@example.com
+maintainer:    honza.hrk@gmail.com
 author:        Jan Hrček
 homepage:      https://github.com/jhrcek/AnkiPron
 synopsis:
@@ -13,6 +13,10 @@ synopsis:
 description:   Please see README.md
 category:      Web
 build-type:    Simple
+
+source-repository head
+    type:     git
+    location: git@github.com/jhrcek/AnkiPronHs.git
 
 library
     exposed-modules:
@@ -26,7 +30,7 @@ library
     default-language: Haskell2010
     ghc-options:      -O2 -Wall
     build-depends:
-        base,
+        base >=4.13 && <4.14,
         bytestring,
         containers,
         directory,
