@@ -4,28 +4,28 @@ import qualified Download
 import qualified Search.DWDS as DWDS
 import qualified Search.Duden as Duden
 import Test.Hspec
-import qualified Types
 import Types (AnkiNote (..), Mp3Url (..), SearchResult (..), Wort (..))
+import qualified Types
 
 main :: IO ()
 main = hspec $ do
-  describe "Types.extractWord"
-    $ it "should extract the word correctly"
-    $ do
-      let mkTest (flds, expecteWort) =
-            Types.extractWord (AnkiNote 1 flds "") `shouldBe` Wort expecteWort
-      mapM_
-        mkTest
-        [ ("pralinka\USe Praline (-, -n)\US\USy", "Praline"),
-          ("vydání (knihy ap.)\USe Auflage (-, -n)\US\USy", "Auflage"),
-          ("zálusk, choutky (na co)\USs Gelüste (auf 4.p)\US\USy", "Gelüste"),
-          ("připravit se na něco (2 předložky)\US(sich) vor/bereiten (auf etw 4.p / für etw)\US\USy", "vorbereiten"),
-          ("trpět (čím)<br />(min?)\USleiden (unter etw) - litt - hat gelitten \US\USy", "leiden"),
-          ("zadržet, zastavit<br />(min?)<br />(er?)\USan/halten - hielt an - hat angehalten<br />er hält an\US\USy", "anhalten"),
-          ("zemřít (na něco)<br />(er?)<br />(min?)\USsterben (an etw - 3.p!) - starb - ist gestorben<br />er stirbt\US\USy", "sterben"),
-          ("napadnou (někoho) (o myšlence)<br />(min?)<br />(er?)\USein/fallen (j-m) (3.p!) - fiel ein - ist eingefallen<br />fällt ein\USDann <b>fiel</b> ihnen Frederick <b>ein</b>.<br>Es ist uns leider nichts <b>eingefallen</b>.\USy", "einfallen"),
-          ("prosit (někoho o něco)<br />(min?)\USbitten (j-n um etw) - bat - hat gebeten\US\USy", "bitten")
-        ]
+  describe "Types.extractWord" $
+    it "should extract the word correctly" $
+      do
+        let mkTest (flds, expecteWort) =
+              Types.extractWord (AnkiNote 1 flds "") `shouldBe` Wort expecteWort
+        mapM_
+          mkTest
+          [ ("pralinka\USe Praline (-, -n)\US\USy", "Praline"),
+            ("vydání (knihy ap.)\USe Auflage (-, -n)\US\USy", "Auflage"),
+            ("zálusk, choutky (na co)\USs Gelüste (auf 4.p)\US\USy", "Gelüste"),
+            ("připravit se na něco (2 předložky)\US(sich) vor/bereiten (auf etw 4.p / für etw)\US\USy", "vorbereiten"),
+            ("trpět (čím)<br />(min?)\USleiden (unter etw) - litt - hat gelitten \US\USy", "leiden"),
+            ("zadržet, zastavit<br />(min?)<br />(er?)\USan/halten - hielt an - hat angehalten<br />er hält an\US\USy", "anhalten"),
+            ("zemřít (na něco)<br />(er?)<br />(min?)\USsterben (an etw - 3.p!) - starb - ist gestorben<br />er stirbt\US\USy", "sterben"),
+            ("napadnou (někoho) (o myšlence)<br />(min?)<br />(er?)\USein/fallen (j-m) (3.p!) - fiel ein - ist eingefallen<br />fällt ein\USDann <b>fiel</b> ihnen Frederick <b>ein</b>.<br>Es ist uns leider nichts <b>eingefallen</b>.\USy", "einfallen"),
+            ("prosit (někoho o něco)<br />(min?)\USbitten (j-n um etw) - bat - hat gebeten\US\USy", "bitten")
+          ]
 
   describe "DWDS.search" $ do
     it "should retrieve URL of pron mp3" $
@@ -42,6 +42,6 @@ main = hspec $ do
       Duden.search (Wort "Ökumene") `shouldReturn` PronNotAvailable
     it "should return NotFound when word not in dictionary" $
       Duden.search (Wort "nonexistent") `shouldReturn` NotFound
-  describe "downloadMp3s"
-    $ it "should not trow an exception when download fails"
-    $ Download.downloadMp3s [(Wort "DUMMY", Mp3Url "https://cdn.duden.de/_media_/audio/ID4521392_440923517.mp3")]
+  describe "downloadMp3s" $
+    it "should not trow an exception when download fails" $
+      Download.downloadMp3s [(Wort "DUMMY", Mp3Url "https://cdn.duden.de/_media_/audio/ID4521392_440923517.mp3")]

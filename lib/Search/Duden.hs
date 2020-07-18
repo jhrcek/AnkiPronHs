@@ -9,8 +9,8 @@ import Control.Lens ((^.))
 import Data.Text.Lazy (Text)
 import Data.Text.Lazy.Encoding (decodeUtf8)
 import Network.HTTP.Client (HttpException (..), HttpExceptionContent (..))
-import qualified Network.Wreq as Wreq
 import Network.Wreq (responseStatus, statusCode)
+import qualified Network.Wreq as Wreq
 import Text.HTML.TagSoup (Tag, fromAttrib, parseTags)
 import Text.HTML.TagSoup.Match (tagOpenAttrLit)
 import Types (Mp3Url (..), SearchResult (..), Wort (..))

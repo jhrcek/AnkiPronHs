@@ -6,10 +6,10 @@ module Main where
 import qualified AnkiDB
 import Control.Monad (forever, unless, when, zipWithM_)
 import qualified Data.List as List
-import qualified Data.Set as Set
 import Data.Set (Set)
-import qualified Data.Text as Text
+import qualified Data.Set as Set
 import Data.Text (Text)
+import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
 import Data.Text.Read (decimal)
 import qualified Download
