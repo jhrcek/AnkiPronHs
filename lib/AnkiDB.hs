@@ -11,12 +11,15 @@ where
 
 import Data.Foldable (for_)
 import Data.List (isInfixOf, isPrefixOf)
+import Data.Maybe (catMaybes)
+import qualified Data.Text.IO as Text
+import Data.Traversable (for)
 import Database.SQLite.Simple
   ( Connection,
-    NamedParam ((:=)),
     Query,
-    executeNamed,
+    executeMany,
     query_,
+    setTrace,
     withConnection,
   )
 import Download (downloadDir, getDownloadedMp3FileName, getDownloadedMp3s)
@@ -100,14 +103,18 @@ addPronReferences = do
   putStrLn "===== ANKI DB UPDATE ====="
   withAnkiDB $ \conn -> do
     notes <- query_ conn wordNotesWithoutPron
-    for_ notes $ \note -> do
+    -- LOG SQL update query being executed
+    setTrace conn (Just Text.putStrLn)
+    fldsAndNotes <- for notes $ \note -> do
       maybeMp3File <- getDownloadedMp3FileName note
-      case maybeMp3File of
-        Just mp3File -> do
-          let newFlds = getFieldsWithAddedMp3Reference mp3File note
-          putStrLn $ "UPDATE notes SET flds=" <> newFlds <> " WHERE id=" <> show (noteId note)
-          executeNamed conn addPronQuery [":flds" := newFlds, ":id" := noteId note]
-        Nothing -> return ()
+      pure $
+        fmap
+          ( \mp3File ->
+              let newFlds = getFieldsWithAddedMp3Reference mp3File note
+               in (newFlds, noteId note)
+          )
+          maybeMp3File
+    executeMany conn addPronQuery (catMaybes fldsAndNotes)
 
 withAnkiDB :: (Connection -> IO a) -> IO a
 withAnkiDB action = do
@@ -147,4 +154,4 @@ wordNotesWithoutPron =
 
 addPronQuery :: Query
 addPronQuery =
-  "UPDATE notes SET flds=:flds WHERE id=:id"
+  "UPDATE notes SET flds = ? WHERE id = ?"
