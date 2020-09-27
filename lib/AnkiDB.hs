@@ -21,6 +21,7 @@ import Database.SQLite.Simple
     query_,
     setTrace,
     withConnection,
+    withExclusiveTransaction,
   )
 import Download (downloadDir, getDownloadedMp3FileName, getDownloadedMp3s)
 import System.Directory (getHomeDirectory, renamePath)
@@ -119,7 +120,8 @@ addPronReferences = do
 withAnkiDB :: (Connection -> IO a) -> IO a
 withAnkiDB action = do
   ankiDB <- getAnkiDbFile
-  withConnection ankiDB action
+  withConnection ankiDB $ \conn ->
+    withExclusiveTransaction conn $ action conn
 
 getAnkiDbFile :: IO FilePath
 getAnkiDbFile =
