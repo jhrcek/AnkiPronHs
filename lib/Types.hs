@@ -63,10 +63,11 @@ getY = (!! 3) . getFields
 
 getFieldsWithAddedMp3Reference :: FilePath -> AnkiNote -> String
 getFieldsWithAddedMp3Reference mp3File note =
-  intercalate "\US" [czech, deutschWithMp3Ref, example, y]
-  where
-    [czech, deutsch, example, y] = getFields note
-    deutschWithMp3Ref = deutsch <> "[sound:" <> mp3File <> "]"
+  case getFields note of
+    [czech, deutsch, example, y] ->
+      let deutschWithMp3Ref = deutsch <> "[sound:" <> mp3File <> "]"
+       in intercalate "\US" [czech, deutschWithMp3Ref, example, y]
+    fields -> error $ "Expected 4 fields, but got " <> show fields
 
 -- | Primary deutsch word represented by the note (only valid for cards with 'wort' tag)
 extractWord :: AnkiNote -> Wort
