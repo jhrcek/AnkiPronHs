@@ -9,9 +9,11 @@ import qualified Network.Wreq as Wreq
 import Text.HTML.TagSoup (Tag, fromAttrib, isTagOpenName, parseTags)
 import Text.HTML.TagSoup.Match (tagOpenAttrLit)
 import Types (Mp3Url (..), SearchResult (..), Wort (..))
+import Search.Exception (httpExceptionHandler)
+import Control.Exception (handle)
 
 search :: Wort -> IO SearchResult
-search (Wort word) = do
+search (Wort word) = handle httpExceptionHandler $ do
   resp <- Wreq.get $ "https://www.dwds.de/wb/" <> word
   let bodyLBS = resp ^. Wreq.responseBody
   return . extractSearchResult . parseTags $ decodeUtf8 bodyLBS

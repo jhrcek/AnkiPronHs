@@ -39,6 +39,7 @@ library
         Download
         Search.Duden
         Search.DWDS
+        Search.Exception
         Types
     hs-source-dirs:   lib
     build-depends:
