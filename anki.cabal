@@ -8,75 +8,70 @@ maintainer:    honza.hrk@gmail.com
 author:        Jan Hrček
 homepage:      https://github.com/jhrcek/AnkiPron
 synopsis:
-    Tool to download pronunciation MP3s and upload them to anki decks
+  Tool to download pronunciation MP3s and upload them to anki decks
 
 description:   Please see README.md
 category:      Web
 build-type:    Simple
 
 source-repository head
-    type:     git
-    location: git@github.com/jhrcek/AnkiPronHs.git
+  type:     git
+  location: git@github.com/jhrcek/AnkiPronHs.git
 
 common common-options
-    ghc-options: 
-        -Wall
-        -Wincomplete-uni-patterns
-        -Wincomplete-record-updates
-        -Wcompat
-        -Widentities
-        -Wredundant-constraints
-        -fhide-source-paths
-        -Wpartial-fields
-        -Wno-unrecognised-pragmas
-        -Wunused-packages
-    default-language: Haskell2010
+  ghc-options:
+    -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates
+    -Wcompat -Widentities -Wredundant-constraints -fhide-source-paths
+    -Wpartial-fields -Wno-unrecognised-pragmas -Wunused-packages
+
+  default-language: Haskell2010
 
 library
-    import: common-options
-    exposed-modules:
-        AnkiDB
-        Download
-        Search.Duden
-        Search.DWDS
-        Search.Exception
-        Types
-    hs-source-dirs:   lib
-    build-depends:
-        base >=4.13 && <5,
-        bytestring,
-        containers,
-        directory,
-        filepath,
-        http-client,
-        lens,
-        process,
-        sqlite-simple,
-        regex-compat-tdfa,
-        regex-tdfa,
-        split,
-        tagsoup,
-        text,
-        text-icu,
-        wreq
+  import:          common-options
+  exposed-modules:
+    AnkiDB
+    Download
+    Search.Duden
+    Search.DWDS
+    Search.Exception
+    Types
+
+  hs-source-dirs:  lib
+  build-depends:
+    , base               >=4.13 && <5
+    , bytestring
+    , containers
+    , directory
+    , filepath
+    , http-client
+    , lens
+    , process
+    , regex-compat-tdfa
+    , regex-tdfa
+    , split
+    , sqlite-simple
+    , tagsoup
+    , text
+    , text-icu
+    , wreq
 
 executable anki-exe
-    import: common-options
-    main-is:          Main.hs
-    hs-source-dirs:   .
-    ghc-options:      -O2
-    build-depends:
-        anki,
-        base,
-        containers,
-        text
+  import:         common-options
+  main-is:        Main.hs
+  hs-source-dirs: .
+  ghc-options:    -O2
+  build-depends:
+    , anki
+    , base
+    , containers
+    , text
 
 test-suite anki-test
-    import: common-options
-    type:             exitcode-stdio-1.0
-    main-is:          Spec.hs
-    hs-source-dirs:   test
-    build-depends:
-        anki,
-        base,
-        hspec
+  import:         common-options
+  type:           exitcode-stdio-1.0
+  main-is:        Spec.hs
+  hs-source-dirs: test
+  build-depends:
+    , anki
+    , base
+    , hspec
