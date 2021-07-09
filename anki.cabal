@@ -39,7 +39,6 @@ library
   hs-source-dirs:  lib
   build-depends:
     , base               >=4.13 && <5
-    , bytestring
     , containers
     , directory
     , filepath
