@@ -57,7 +57,9 @@ playDownloaded :: IO ()
 playDownloaded = do
   mp3filenames <- getDownloadedMp3s
   let mp3s = fmap (downloadDir </>) mp3filenames
-  callProcess "mplayer" mp3s
+  if null mp3s
+    then putStrLn "There are no files to play back"
+    else callProcess "mplayer" mp3s
 
 getDownloadedMp3FileName :: AnkiNote -> IO (Maybe FilePath)
 getDownloadedMp3FileName note = do
