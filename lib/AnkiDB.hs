@@ -63,15 +63,15 @@ noteRules =
     ]
 
 
-wrongFieldCount :: NoteFilter --each note must have 4 fields
+wrongFieldCount :: NoteFilter -- each note must have 4 fields
 wrongFieldCount = (/= 4) . length . getFields
 
 
-lastFieldNotY :: NoteFilter --last field of each note must be y
+lastFieldNotY :: NoteFilter -- last field of each note must be y
 lastFieldNotY = (/= "y") . getY
 
 
-maskFemNeutWithoutWort :: NoteFilter --Every note which has Maskulinum, Femininum or Neutrum must also have "wort" tag
+maskFemNeutWithoutWort :: NoteFilter -- Every note which has Maskulinum, Femininum or Neutrum must also have "wort" tag
 maskFemNeutWithoutWort AnkiNote{noteTags} =
     any (`isInfixOf` noteTags) ["Maskulinum", "Femininum", "Neutrum"] && not ("wort" `isInfixOf` noteTags)
 

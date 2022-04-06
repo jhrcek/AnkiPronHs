@@ -47,7 +47,6 @@ downloadMp3 (Wort wort, Mp3Url url) =
     callProcess
         "wget"
         [ "--no-verbose"
-        , "--no-check-certificate"
         , "--output-document=" <> downloadDir <> "/" <> wort <> ".mp3"
         , Text.unpack url
         ]

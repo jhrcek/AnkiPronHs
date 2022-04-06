@@ -93,4 +93,4 @@ extractWord = Wort . deleteSpacesAndSlashes . deleteArticles . deletePartAfterDa
     deletePartAfterDash = delRegex " - .*"
     deleteArticles s = let ws = words s in if length ws > 1 then last ws else s
     deleteSpacesAndSlashes = filter (\c -> not (isSpace c) && c /= '/')
-    delRegex regex input = subRegex (mkRegex regex) input "" --subst regex by empty String
+    delRegex regex input = subRegex (mkRegex regex) input "" -- subst regex by empty String

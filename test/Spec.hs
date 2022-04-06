@@ -30,9 +30,9 @@ main = hspec $ do
 
     describe "DWDS.search" $ do
         it "should retrieve URL of pron mp3" $
-            DWDS.search (Wort "Bär") `shouldReturn` PronFound (Mp3Url "http://media.dwds.de/dwds2/audio/005/der_Baer.mp3")
+            DWDS.search (Wort "Bär") `shouldReturn` PronFound (Mp3Url "https://media.dwds.de/dwds2/audio/005/der_Baer.mp3")
         it "should return PronNotAvailable when word has no pron" $
-            DWDS.search (Wort "Abwicklung") `shouldReturn` PronNotAvailable
+            DWDS.search (Wort "Verlängerungskabel") `shouldReturn` PronNotAvailable
         it "should return NotFound when word not in dictionary" $
             DWDS.search (Wort "nonexistent") `shouldReturn` NotFound
 

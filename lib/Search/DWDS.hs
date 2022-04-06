@@ -30,8 +30,8 @@ extractSearchResult tags
 
 extractMp3Url :: [Tag Text] -> [Mp3Url]
 extractMp3Url =
-    -- src attribute contains things like "//media.dwds.de/dwds2/audio/002/der_Hund.mp3"
-    fmap (Mp3Url . ("http:" <>) . fromAttrib "src") . filter (isTagOpenName "source")
+    -- src attribute contains things like "https://media.dwds.de/dwds2/audio/002/der_Hund.mp3"
+    fmap (Mp3Url . fromAttrib "src") . filter (isTagOpenName "source")
 
 
 isWordWithoutPron :: [Tag Text] -> Bool
