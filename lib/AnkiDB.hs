@@ -1,38 +1,39 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module AnkiDB (
-    validateNotes,
-    getWordNotesWithoutPron,
-    addPronReferences,
-    moveMp3sToMediaDir,
-) where
+module AnkiDB
+    ( validateNotes
+    , getWordNotesWithoutPron
+    , addPronReferences
+    , moveMp3sToMediaDir
+    )
+where
 
 import Data.Foldable (for_)
 import Data.List (isInfixOf, isPrefixOf)
 import Data.Maybe (catMaybes)
 import qualified Data.Text.IO as Text
 import Data.Traversable (for)
-import Database.SQLite.Simple (
-    Connection,
-    Query,
-    executeMany,
-    query_,
-    setTrace,
-    withConnection,
-    withExclusiveTransaction,
- )
+import Database.SQLite.Simple
+    ( Connection
+    , Query
+    , executeMany
+    , query_
+    , setTrace
+    , withConnection
+    , withExclusiveTransaction
+    )
 import Download (downloadDir, getDownloadedMp3FileName, getDownloadedMp3s)
 import System.Directory (getHomeDirectory, renamePath)
 import System.FilePath ((</>))
 import Text.Regex.TDFA ((=~))
-import Types (
-    AnkiNote (..),
-    getDeutsch,
-    getFields,
-    getFieldsWithAddedMp3Reference,
-    getY,
- )
+import Types
+    ( AnkiNote (..)
+    , getDeutsch
+    , getFields
+    , getFieldsWithAddedMp3Reference
+    , getY
+    )
 
 
 -- Verifying integrity of Anki notes

@@ -1,11 +1,12 @@
-module Download (
-    getWordsCorrespondingToDownloadedMp3s,
-    downloadMp3s,
-    downloadDir,
-    getDownloadedMp3FileName,
-    getDownloadedMp3s,
-    playDownloaded,
-) where
+module Download
+    ( getWordsCorrespondingToDownloadedMp3s
+    , downloadMp3s
+    , downloadDir
+    , getDownloadedMp3FileName
+    , getDownloadedMp3s
+    , playDownloaded
+    )
+where
 
 import Control.Exception (IOException, catch)
 import Control.Monad (unless)
