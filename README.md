@@ -7,7 +7,7 @@ and adds reference to the file to anki database.
 # Installation (Fedora)
 
 ```bash
-sudo dnf install libicu-devel
+sudo dnf install pcre-devel
 stack install --pedantic --local-bin-path ~/Dropbox/Softy/AnkiPron/
 ```
 

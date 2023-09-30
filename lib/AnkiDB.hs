@@ -1,5 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 module AnkiDB
     ( validateNotes
@@ -26,7 +27,7 @@ import Database.SQLite.Simple
 import Download (downloadDir, getDownloadedMp3FileName, getDownloadedMp3s)
 import System.Directory (getHomeDirectory, renamePath)
 import System.FilePath ((</>))
-import Text.Regex.TDFA ((=~))
+import Text.Regex.PCRE.Heavy (Regex, re, (=~))
 import Types
     ( AnkiNote (..)
     , getDeutsch
@@ -96,14 +97,14 @@ hasSpan = containsUndesired "<span"
 
 
 hasLeadingOrTrailingWhiteSpaces :: NoteFilter
-hasLeadingOrTrailingWhiteSpaces = fieldMatches "^ +.*|.* +$"
+hasLeadingOrTrailingWhiteSpaces = fieldMatches [re|^ +.*|.* +$|]
 
 
 containsUndesired :: String -> NoteFilter
 containsUndesired str note = str `isInfixOf` noteFlds note
 
 
-fieldMatches :: String -> NoteFilter
+fieldMatches :: Regex -> NoteFilter
 fieldMatches regex note = any (=~ regex) $ getFields note
 
 
