@@ -1,4 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 
@@ -13,7 +12,7 @@ where
 import Data.Foldable (for_)
 import Data.List (isInfixOf, isPrefixOf)
 import Data.Maybe (catMaybes)
-import qualified Data.Text.IO as Text
+import Data.Text.IO qualified as Text
 import Data.Traversable (for)
 import Database.SQLite.Simple
     ( Connection

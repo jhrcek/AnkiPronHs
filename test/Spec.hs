@@ -1,12 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import Data.Foldable (for_)
-import qualified Download
-import qualified Search.DWDS as DWDS
-import qualified Search.Duden as Duden
+import Download qualified
+import Search.DWDS qualified as DWDS
+import Search.Duden qualified as Duden
 import Test.Hspec
 import Types (AnkiNote (..), Mp3Url (..), SearchResult (..), Wort (..))
-import qualified Types
+import Types qualified
 
 
 main :: IO ()

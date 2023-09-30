@@ -12,7 +12,7 @@ import Control.Exception (IOException, catch)
 import Control.Monad (unless)
 import Data.Foldable (traverse_)
 import Data.Set (Set, fromList)
-import qualified Data.Text.Lazy as Text
+import Data.Text.Lazy qualified as Text
 import System.Directory (doesDirectoryExist, doesFileExist, listDirectory)
 import System.Exit (die)
 import System.FilePath (dropExtension, (<.>), (</>))

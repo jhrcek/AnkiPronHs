@@ -1,20 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections #-}
 
 module Main where
 
-import qualified AnkiDB
+import AnkiDB qualified
 import Control.Monad (forever, unless, when, zipWithM_)
-import qualified Data.List as List
+import Data.List qualified as List
 import Data.Set (Set)
-import qualified Data.Set as Set
+import Data.Set qualified as Set
 import Data.Text (Text)
-import qualified Data.Text as Text
-import qualified Data.Text.IO as Text
+import Data.Text qualified as Text
+import Data.Text.IO qualified as Text
 import Data.Text.Read (decimal)
-import qualified Download
-import qualified Search.DWDS as DWDS
-import qualified Search.Duden as Duden
+import Download qualified
+import Search.DWDS qualified as DWDS
+import Search.Duden qualified as Duden
 import System.Exit (exitSuccess)
 import Types (SearchResult (..), Wort (Wort), compareWordsCaseInsensitive, extractWord)
 

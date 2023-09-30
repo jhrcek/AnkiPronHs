@@ -6,7 +6,7 @@ import Control.Exception (handle)
 import Control.Lens ((^.))
 import Data.Text.Lazy (Text)
 import Data.Text.Lazy.Encoding (decodeUtf8)
-import qualified Network.Wreq as Wreq
+import Network.Wreq qualified as Wreq
 import Search.Exception (httpExceptionHandler)
 import Text.HTML.TagSoup (Tag, fromAttrib, isTagOpenName, parseTags)
 import Text.HTML.TagSoup.Match (tagOpenAttrLit)

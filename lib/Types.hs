@@ -6,7 +6,7 @@ module Types where
 import Data.Char (isSpace)
 import Data.List (intercalate)
 import Data.List.Split (splitOn)
-import qualified Data.Text as Text
+import Data.Text qualified as Text
 import Data.Text.Lazy (Text)
 import Database.SQLite.Simple.FromRow (FromRow, field, fromRow)
 import Text.Regex.PCRE.Heavy (Regex, gsub, re)
