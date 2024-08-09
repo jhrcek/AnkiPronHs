@@ -40,12 +40,13 @@ library
 
   hs-source-dirs:  lib
   build-depends:
-    , base           >=4.13 && <5
+    , base              >=4.13 && <5
     , containers
     , directory
     , filepath
     , http-client
     , lens
+    , optparse-generic
     , pcre-heavy
     , process
     , split
@@ -63,6 +64,7 @@ executable anki-exe
     , anki
     , base
     , containers
+    , optparse-generic
     , text
 
 test-suite anki-test

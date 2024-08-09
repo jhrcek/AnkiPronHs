@@ -12,7 +12,7 @@ import Database.SQLite.Simple.FromRow (FromRow, field, fromRow)
 import Text.Regex.PCRE.Heavy (Regex, gsub, re)
 
 
-newtype Wort = Wort String deriving (Eq, Ord)
+newtype Wort = Wort {unWort :: String} deriving (Eq, Ord)
 
 
 compareWordsCaseInsensitive :: Wort -> Wort -> Ordering

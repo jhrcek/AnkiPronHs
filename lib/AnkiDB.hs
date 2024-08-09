@@ -1,24 +1,27 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 
 module AnkiDB
     ( Deck (..)
-    , validateNotes
-    , getWordNotesWithoutPron
     , addPronReferences
+    , dumpAllWords
+    , getWordNotesWithoutPron
     , moveMp3sToMediaDir
+    , validateNotes
     )
 where
 
-import Data.Foldable (for_)
-import Data.List (isInfixOf, isPrefixOf)
+import Data.Foldable (for_, traverse_)
+import Data.List (isInfixOf, isPrefixOf, nub, sort)
 import Data.Maybe (catMaybes)
 import Data.Text.IO qualified as Text
 import Data.Traversable (for)
 import Database.SQLite.Simple
     ( Connection
-    , Only (..)
     , Query
     , executeMany
     , query
@@ -28,11 +31,14 @@ import Database.SQLite.Simple
     )
 import Database.SQLite.Simple.ToField (ToField, toField)
 import Download (downloadDir, getDownloadedMp3FileName, getDownloadedMp3s)
+import Options.Generic (Generic, Only (Only), ParseField, ParseFields, ParseRecord)
 import System.Directory (getHomeDirectory, renamePath)
 import System.FilePath ((</>))
 import Text.Regex.PCRE.Heavy (Regex, re, (=~))
 import Types
     ( AnkiNote (..)
+    , Wort (..)
+    , extractWord
     , getDeutsch
     , getFields
     , getFieldsWithAddedMp3Reference
@@ -116,6 +122,15 @@ getWordNotesWithoutPron deck =
     withAnkiDB (\conn -> query conn wordNotesWithoutPron (Only deck))
 
 
+dumpAllWords :: Deck -> IO ()
+dumpAllWords deck =
+    traverse_ putStrLn
+        . nub
+        . sort
+        . fmap (unWort . extractWord)
+        =<< withAnkiDB (\conn -> query conn wordNotes (Only deck))
+
+
 addPronReferences :: Deck -> IO ()
 addPronReferences deck = do
     putStrLn "===== ANKI DB UPDATE ====="
@@ -168,7 +183,7 @@ getAnkiPath fileName = do
 
 
 ----- Queries -----
--- notes specify mid (model id) based on which we determine that the note is part of HrkDeutsch
+-- notes specify mid (model id) based on which we determine that the note is part of Deutsch
 allNotes :: Query
 allNotes =
     "SELECT id, flds, tags \
@@ -178,9 +193,14 @@ allNotes =
 
 wordNotesWithoutPron :: Query
 wordNotesWithoutPron =
+    wordNotes <> " AND flds NOT LIKE '%.mp3%'"
+
+
+wordNotes :: Query
+wordNotes =
     "SELECT id, flds, tags \
     \FROM notes \
-    \WHERE tags LIKE '%wort%' AND flds NOT LIKE '%.mp3%' AND mid = ?"
+    \WHERE tags LIKE '%wort%' AND mid = ?"
 
 
 addPronQuery :: Query
@@ -190,7 +210,11 @@ addPronQuery =
     \WHERE id = ?"
 
 
-data Deck = HrkDeutsch | HrkEnglish
+data Deck
+    = Deutsch
+    | English
+    deriving stock (Generic, Show, Read)
+    deriving anyclass (ParseRecord, ParseFields, ParseField)
 
 
 instance ToField Deck where
@@ -199,5 +223,5 @@ instance ToField Deck where
 
 modelId :: Deck -> Int
 modelId = \case
-    HrkDeutsch -> 1852153645
-    HrkEnglish -> 1723177457855
+    Deutsch -> 1852153645
+    English -> 1723177457855

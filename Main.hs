@@ -1,3 +1,6 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -9,38 +12,40 @@ import Control.Monad (forever, unless, when, zipWithM_)
 import Data.List qualified as List
 import Data.Set (Set)
 import Data.Set qualified as Set
-import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Text.IO qualified as Text
 import Data.Text.Read (decimal)
 import Download qualified
+import Options.Generic (Generic, ParseRecord, Text, getRecord)
 import Search.DWDS qualified as DWDS
 import Search.Duden qualified as Duden
 import Search.VocabularyCom qualified as VocabularyCom
-import System.Environment (getArgs)
-import System.Exit (die, exitSuccess)
+import System.Exit (exitSuccess)
 import Types (SearchResult (..), Wort (Wort), compareWordsCaseInsensitive, extractWord)
 
 
 main :: IO ()
 main = do
-    deck <-
-        getArgs >>= \case
-            [deckStr] -> case deckStr of
-                "english" -> pure HrkEnglish
-                "deutsch" -> pure HrkDeutsch
-                _ -> die $ "Invalid deck " <> deckStr <> ". Use english | deutsch"
-            _ -> die "Usage: anki-pron (english | deutsch)"
-    forever $ do
-        op <- pickOperation
-        case op of
-            Validate -> AnkiDB.validateNotes deck
-            Download -> downloadWordsWithoutPron deck
-            UpdateDB -> do
-                AnkiDB.addPronReferences deck
-                AnkiDB.moveMp3sToMediaDir
-            PlaySounds -> Download.playDownloaded
-            Quit -> exitSuccess
+    cmd <- getRecord "Anki Pron Downloader"
+    case cmd of
+        DumpWords deck -> AnkiDB.dumpAllWords deck
+        Download deck -> forever $ do
+            op <- pickOperation
+            case op of
+                Validate -> AnkiDB.validateNotes deck
+                DownloadMp3s -> downloadWordsWithoutPron deck
+                UpdateDB -> do
+                    AnkiDB.addPronReferences deck
+                    AnkiDB.moveMp3sToMediaDir
+                PlaySounds -> Download.playDownloaded
+                Quit -> exitSuccess
+
+
+data CliCommand
+    = DumpWords Deck
+    | Download Deck
+    deriving stock (Generic, Show)
+    deriving anyclass (ParseRecord)
 
 
 pickOperation :: IO Operation
@@ -60,7 +65,7 @@ pickOperation = do
 
 data Operation
     = Validate
-    | Download
+    | DownloadMp3s
     | PlaySounds
     | UpdateDB
     | Quit
@@ -69,7 +74,7 @@ data Operation
 operations :: [(Operation, Text)]
 operations =
     [ (Validate, "Validate notes in Anki DB")
-    , (Download, "Download pron mp3 files")
+    , (DownloadMp3s, "Download pron mp3 files")
     , (PlaySounds, "Play downloaded sounds")
     , (UpdateDB, "Update Anki DB and copy mp3s media folder")
     , (Quit, "Quit")
@@ -102,8 +107,8 @@ downloadWordsWithoutPron deck = do
 
 search :: Deck -> Wort -> IO (Wort, SearchResult)
 search = \case
-    HrkDeutsch -> deutschSearch
-    HrkEnglish -> englishSearch
+    Deutsch -> deutschSearch
+    English -> englishSearch
 
 
 deutschSearch :: Wort -> IO (Wort, SearchResult)
