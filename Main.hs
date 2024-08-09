@@ -1,7 +1,9 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
+import AnkiDB (Deck (..))
 import AnkiDB qualified
 import Control.Monad (forever, unless, when, zipWithM_)
 import Data.List qualified as List
@@ -14,33 +16,43 @@ import Data.Text.Read (decimal)
 import Download qualified
 import Search.DWDS qualified as DWDS
 import Search.Duden qualified as Duden
-import System.Exit (exitSuccess)
+import Search.VocabularyCom qualified as VocabularyCom
+import System.Environment (getArgs)
+import System.Exit (die, exitSuccess)
 import Types (SearchResult (..), Wort (Wort), compareWordsCaseInsensitive, extractWord)
 
 
 main :: IO ()
-main = forever $ do
-    op <- pickOperation "===== PICK OPERATION ====="
-    case op of
-        Validate -> AnkiDB.validateNotes
-        Download -> downloadWordsWithoutPron
-        UpdateDB -> do
-            AnkiDB.addPronReferences
-            AnkiDB.moveMp3sToMediaDir
-        PlaySounds -> Download.playDownloaded
-        Quit -> exitSuccess
+main = do
+    deck <-
+        getArgs >>= \case
+            [deckStr] -> case deckStr of
+                "english" -> pure HrkEnglish
+                "deutsch" -> pure HrkDeutsch
+                _ -> die $ "Invalid deck " <> deckStr <> ". Use english | deutsch"
+            _ -> die "Usage: anki-pron (english | deutsch)"
+    forever $ do
+        op <- pickOperation
+        case op of
+            Validate -> AnkiDB.validateNotes deck
+            Download -> downloadWordsWithoutPron deck
+            UpdateDB -> do
+                AnkiDB.addPronReferences deck
+                AnkiDB.moveMp3sToMediaDir
+            PlaySounds -> Download.playDownloaded
+            Quit -> exitSuccess
 
 
-pickOperation :: Text -> IO Operation
-pickOperation prompt = do
-    Text.putStrLn prompt
+pickOperation :: IO Operation
+pickOperation = do
+    Text.putStrLn "===== PICK OPERATION ====="
     zipWithM_ showOperation [0 :: Int ..] operations
     x <- Text.getLine
     case decimal x of
         Right (n, "") | 0 <= n && n < length operations -> return . fst $ operations !! n
         _ -> do
             Text.putStrLn $ "Invalid input " <> x
-            pickOperation prompt
+            pickOperation
   where
     showOperation index (_, description) =
         Text.putStrLn $ mconcat [Text.pack (show index), ") ", description]
@@ -65,10 +77,10 @@ operations =
 
 
 -- Download operation
-downloadWordsWithoutPron :: IO ()
-downloadWordsWithoutPron = do
-    wordsToBeDownloaded <- determineWhatNeedsToBeDownloaded
-    wordResultPairs <- traverse search $ Set.toList wordsToBeDownloaded
+downloadWordsWithoutPron :: AnkiDB.Deck -> IO ()
+downloadWordsWithoutPron deck = do
+    wordsToBeDownloaded <- determineWhatNeedsToBeDownloaded deck
+    wordResultPairs <- traverse (search deck) $ Set.toList wordsToBeDownloaded
     let toDownload = [(wort, mp3Url) | (wort, PronFound mp3Url) <- wordResultPairs]
         pronNotAvailable = [wort | (wort, PronNotAvailable) <- wordResultPairs]
         notFound = [wort | (wort, NotFound) <- wordResultPairs]
@@ -88,8 +100,14 @@ downloadWordsWithoutPron = do
     updateFilterFiles pronNotAvailable notFound
 
 
-search :: Wort -> IO (Wort, SearchResult)
-search wort = do
+search :: Deck -> Wort -> IO (Wort, SearchResult)
+search = \case
+    HrkDeutsch -> deutschSearch
+    HrkEnglish -> englishSearch
+
+
+deutschSearch :: Wort -> IO (Wort, SearchResult)
+deutschSearch wort = do
     putStrLn $ "Search " <> show wort
     dwdsResult <- DWDS.search wort
     putStrLn $ "  DWDS: " <> show dwdsResult
@@ -103,9 +121,17 @@ search wort = do
                 _ -> return dwdsResult
 
 
-determineWhatNeedsToBeDownloaded :: IO (Set Wort)
-determineWhatNeedsToBeDownloaded = do
-    wordsWithoutPronInAnkiDb <- fmap (Set.fromList . fmap extractWord) AnkiDB.getWordNotesWithoutPron
+englishSearch :: Wort -> IO (Wort, SearchResult)
+englishSearch wort = do
+    putStrLn $ "Search " <> show wort
+    result <- VocabularyCom.search wort
+    putStrLn $ "  vocabulary.com: " <> show result
+    return (wort, result)
+
+
+determineWhatNeedsToBeDownloaded :: AnkiDB.Deck -> IO (Set Wort)
+determineWhatNeedsToBeDownloaded deck = do
+    wordsWithoutPronInAnkiDb <- fmap (Set.fromList . fmap extractWord) (AnkiDB.getWordNotesWithoutPron deck)
     wordsAlreadyDownloaded <- Download.getWordsCorrespondingToDownloadedMp3s
     wordsWithoutPronInDict <- loadWordsFromFile wordsWithoutPronFile
     wordsNotInDict <- loadWordsFromFile wordsNotFoundFile

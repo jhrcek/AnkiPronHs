@@ -1,8 +1,10 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 
 module AnkiDB
-    ( validateNotes
+    ( Deck (..)
+    , validateNotes
     , getWordNotesWithoutPron
     , addPronReferences
     , moveMp3sToMediaDir
@@ -16,13 +18,15 @@ import Data.Text.IO qualified as Text
 import Data.Traversable (for)
 import Database.SQLite.Simple
     ( Connection
+    , Only (..)
     , Query
     , executeMany
-    , query_
+    , query
     , setTrace
     , withConnection
     , withExclusiveTransaction
     )
+import Database.SQLite.Simple.ToField (ToField, toField)
 import Download (downloadDir, getDownloadedMp3FileName, getDownloadedMp3s)
 import System.Directory (getHomeDirectory, renamePath)
 import System.FilePath ((</>))
@@ -37,9 +41,9 @@ import Types
 
 
 -- Verifying integrity of Anki notes
-validateNotes :: IO ()
-validateNotes = withAnkiDB $ \conn -> do
-    notes <- query_ conn allNotes :: IO [AnkiNote]
+validateNotes :: Deck -> IO ()
+validateNotes deck = withAnkiDB $ \conn -> do
+    notes <- query conn allNotes (Only deck) :: IO [AnkiNote]
     for_ noteRules $ \(rule, description) -> case filter rule notes of
         [] ->
             putStrLn $ "PASSED: " <> description
@@ -107,16 +111,16 @@ fieldMatches :: Regex -> NoteFilter
 fieldMatches regex note = any (=~ regex) $ getFields note
 
 
-getWordNotesWithoutPron :: IO [AnkiNote]
-getWordNotesWithoutPron =
-    withAnkiDB (\conn -> query_ conn wordNotesWithoutPron)
+getWordNotesWithoutPron :: Deck -> IO [AnkiNote]
+getWordNotesWithoutPron deck =
+    withAnkiDB (\conn -> query conn wordNotesWithoutPron (Only deck))
 
 
-addPronReferences :: IO ()
-addPronReferences = do
+addPronReferences :: Deck -> IO ()
+addPronReferences deck = do
     putStrLn "===== ANKI DB UPDATE ====="
     withAnkiDB $ \conn -> do
-        notes <- query_ conn wordNotesWithoutPron
+        notes <- query conn wordNotesWithoutPron (Only deck)
         -- LOG SQL update query being executed
         setTrace conn (Just Text.putStrLn)
         fldsAndNotes <- for notes $ \note -> do
@@ -167,14 +171,33 @@ getAnkiPath fileName = do
 -- notes specify mid (model id) based on which we determine that the note is part of HrkDeutsch
 allNotes :: Query
 allNotes =
-    "SELECT id,flds,tags FROM notes WHERE mid=1852153645"
+    "SELECT id, flds, tags \
+    \FROM notes \
+    \WHERE mid = ?"
 
 
 wordNotesWithoutPron :: Query
 wordNotesWithoutPron =
-    "SELECT id,flds,tags FROM notes WHERE tags LIKE '%wort%' AND flds NOT LIKE '%.mp3%' AND mid=1852153645"
+    "SELECT id, flds, tags \
+    \FROM notes \
+    \WHERE tags LIKE '%wort%' AND flds NOT LIKE '%.mp3%' AND mid = ?"
 
 
 addPronQuery :: Query
 addPronQuery =
-    "UPDATE notes SET flds = ? WHERE id = ?"
+    "UPDATE notes \
+    \SET flds = ? \
+    \WHERE id = ?"
+
+
+data Deck = HrkDeutsch | HrkEnglish
+
+
+instance ToField Deck where
+    toField = toField . modelId
+
+
+modelId :: Deck -> Int
+modelId = \case
+    HrkDeutsch -> 1852153645
+    HrkEnglish -> 1723177457855

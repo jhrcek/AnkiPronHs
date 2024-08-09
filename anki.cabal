@@ -35,6 +35,7 @@ library
     Search.Duden
     Search.DWDS
     Search.Exception
+    Search.VocabularyCom
     Types
 
   hs-source-dirs:  lib
