@@ -64,7 +64,12 @@ playDownloaded = do
     let mp3s = fmap (downloadDir </>) mp3filenames
     if null mp3s
         then putStrLn "There are no files to play back"
-        else callProcess "mplayer" mp3s
+        else
+            callProcess
+                "mplayer"
+                ( "-noautosub" -- don't try to automatically load subtitles
+                    : mp3s
+                )
 
 
 getDownloadedMp3FileName :: AnkiNote -> IO (Maybe FilePath)
