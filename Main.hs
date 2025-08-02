@@ -109,6 +109,7 @@ search :: Deck -> Wort -> IO (Wort, SearchResult)
 search = \case
     Deutsch -> deutschSearch
     English -> englishSearch
+    Portuguese -> \_ -> error "Portuguese search not implemented yet"
 
 
 deutschSearch :: Wort -> IO (Wort, SearchResult)

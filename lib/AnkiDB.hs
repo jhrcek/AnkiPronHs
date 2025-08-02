@@ -213,6 +213,7 @@ addPronQuery =
 data Deck
     = Deutsch
     | English
+    | Portuguese
     deriving stock (Generic, Show, Read)
     deriving anyclass (ParseRecord, ParseFields, ParseField)
 
@@ -225,3 +226,4 @@ modelId :: Deck -> Int
 modelId = \case
     Deutsch -> 1852153645
     English -> 1723177457855
+    Portuguese -> 1723962703381
