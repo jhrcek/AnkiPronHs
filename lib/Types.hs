@@ -8,7 +8,7 @@ import Data.List (intercalate)
 import Data.List.Split (splitOn)
 import Data.Text qualified as Text
 import Data.Text.Lazy (Text)
-import Database.SQLite.Simple.FromRow (FromRow, field, fromRow)
+import Database.SQLite.Simple.FromRow (FromRow (..), field)
 import Text.Regex.PCRE.Heavy (Regex, gsub, re)
 
 
@@ -45,44 +45,35 @@ instance Show SearchResult where
 
 data AnkiNote = AnkiNote
     { noteId :: Int
-    , noteFlds :: String
+    , noteLang1 :: String
+    , noteLang2 :: String
+    , noteExamples :: String
+    , noteYes :: String
     , noteTags :: String
     }
     deriving (Show)
 
 
 instance FromRow AnkiNote where
-    fromRow = AnkiNote <$> field <*> field <*> field
+    fromRow = do
+        nId <- field
+        flds <- field
+        tags <- field
+        case splitOn "\US" flds of
+            [lang1, lang2, examples, yes] ->
+                pure $ AnkiNote nId lang1 lang2 examples yes tags
+            fields ->
+                error $ "Expected 4 fields, but got " <> show (length fields) <> ": " <> show fields
 
 
--- Extracting info from anki notes
 getFields :: AnkiNote -> [String]
-getFields = splitOn "\US" . noteFlds
-
-
-getCzech :: AnkiNote -> String
-getCzech = (!! 0) . getFields
-
-
-getDeutsch :: AnkiNote -> String
-getDeutsch = (!! 1) . getFields
-
-
-getExamples :: AnkiNote -> String
-getExamples = (!! 2) . getFields
-
-
-getY :: AnkiNote -> String
-getY = (!! 3) . getFields
+getFields note = [noteLang1 note, noteLang2 note, noteExamples note, noteYes note]
 
 
 getFieldsWithAddedMp3Reference :: FilePath -> AnkiNote -> String
 getFieldsWithAddedMp3Reference mp3File note =
-    case getFields note of
-        [czech, deutsch, example, y] ->
-            let deutschWithMp3Ref = deutsch <> "[sound:" <> mp3File <> "]"
-             in intercalate "\US" [czech, deutschWithMp3Ref, example, y]
-        fields -> error $ "Expected 4 fields, but got " <> show fields
+    let lang2WithMp3Ref = noteLang2 note <> "[sound:" <> mp3File <> "]"
+     in intercalate "\US" [noteLang1 note, lang2WithMp3Ref, noteExamples note, noteYes note]
 
 
 -- | Primary deutsch word represented by the note (only valid for cards with 'wort' tag)
@@ -94,7 +85,7 @@ extractWord =
         . deletePartAfterDash
         . deleteSound
         . deleteThingsInParens
-        . getDeutsch
+        . noteLang2
   where
     deleteSound = delRegex [re|\[sound:.*\.mp3\]|]
     deleteThingsInParens = delRegex [re|\([^\)]*\)|]

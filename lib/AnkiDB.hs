@@ -10,8 +10,10 @@ module AnkiDB
     , addPronReferences
     , dumpAllWords
     , getWordNotesWithoutPron
+    , getWordNotesWithoutExample
     , moveMp3sToMediaDir
     , validateNotes
+    , wordNotesWithoutExample
     )
 where
 
@@ -31,6 +33,7 @@ import Database.SQLite.Simple
     )
 import Database.SQLite.Simple.ToField (ToField, toField)
 import Download (downloadDir, getDownloadedMp3FileName, getDownloadedMp3s)
+import Numeric.Natural (Natural)
 import Options.Generic (Generic, Only (Only), ParseField, ParseFields, ParseRecord)
 import System.Directory (getHomeDirectory, renamePath)
 import System.FilePath ((</>))
@@ -39,10 +42,8 @@ import Types
     ( AnkiNote (..)
     , Wort (..)
     , extractWord
-    , getDeutsch
     , getFields
     , getFieldsWithAddedMp3Reference
-    , getY
     )
 
 
@@ -63,8 +64,7 @@ type NoteFilter = AnkiNote -> Bool
 
 noteRules :: [(NoteFilter, String)]
 noteRules =
-    [ (wrongFieldCount, "Note must have 4 fields")
-    , (lastFieldNotY, "The last field of note must be 'y'")
+    [ (lastFieldNotY, "The last field of note must be 'y'")
     , (maskFemNeutWithoutWort, "Note with Maskulinum/Femininum/Neutrum must have 'wort' tag")
     , (hasNbsp, "Note mustn't contain &nbsp;")
     , (hasQuot, "Note mustn't contain &quot;")
@@ -74,12 +74,8 @@ noteRules =
     ]
 
 
-wrongFieldCount :: NoteFilter -- each note must have 4 fields
-wrongFieldCount = (/= 4) . length . getFields
-
-
 lastFieldNotY :: NoteFilter -- last field of each note must be y
-lastFieldNotY = (/= "y") . getY
+lastFieldNotY = (/= "y") . noteYes
 
 
 maskFemNeutWithoutWort :: NoteFilter -- Every note which has Maskulinum, Femininum or Neutrum must also have "wort" tag
@@ -94,7 +90,7 @@ derDieDasWithoutTag note =
         || prefixAndTagInconsistent ["s ", "(s) ", "r/s "] "Neutrum"
   where
     prefixAndTagInconsistent prefixes tag = any (`isPrefixOf` deutsch) prefixes `xor` (tag `isInfixOf` tags)
-    deutsch = getDeutsch note
+    deutsch = noteLang2 note
     tags = noteTags note
     x `xor` y = (x || y) && not (x && y)
 
@@ -110,7 +106,7 @@ hasLeadingOrTrailingWhiteSpaces = fieldMatches [re|^ +.*|.* +$|]
 
 
 containsUndesired :: String -> NoteFilter
-containsUndesired str note = str `isInfixOf` noteFlds note
+containsUndesired str note = any (str `isInfixOf`) (getFields note)
 
 
 fieldMatches :: Regex -> NoteFilter
@@ -120,6 +116,11 @@ fieldMatches regex note = any (=~ regex) $ getFields note
 getWordNotesWithoutPron :: Deck -> IO [AnkiNote]
 getWordNotesWithoutPron deck =
     withAnkiDB (\conn -> query conn wordNotesWithoutPron (Only deck))
+
+
+getWordNotesWithoutExample :: Deck -> Maybe Natural -> IO [AnkiNote]
+getWordNotesWithoutExample deck mLimit =
+    withAnkiDB (\conn -> query conn wordNotesWithoutExample (deck, maybe 100000 toInteger mLimit))
 
 
 dumpAllWords :: Deck -> IO ()
@@ -201,6 +202,11 @@ wordNotes =
     "SELECT id, flds, tags \
     \FROM notes \
     \WHERE tags LIKE '%wort%' AND mid = ?"
+
+
+wordNotesWithoutExample :: Query
+wordNotesWithoutExample =
+    wordNotes <> " AND flds NOT LIKE '%<em>%' LIMIT ?"
 
 
 addPronQuery :: Query

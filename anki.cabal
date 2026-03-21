@@ -32,6 +32,7 @@ library
   exposed-modules:
     AnkiDB
     Download
+    GenExamples
     Search.Duden
     Search.DWDS
     Search.Exception

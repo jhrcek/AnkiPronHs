@@ -16,6 +16,8 @@ import Data.Text qualified as Text
 import Data.Text.IO qualified as Text
 import Data.Text.Read (decimal)
 import Download qualified
+import GenExamples qualified
+import Numeric.Natural (Natural)
 import Options.Generic (Generic, ParseRecord, Text, getRecord)
 import Search.DWDS qualified as DWDS
 import Search.Duden qualified as Duden
@@ -39,11 +41,13 @@ main = do
                     AnkiDB.moveMp3sToMediaDir
                 PlaySounds -> Download.playDownloaded
                 Quit -> exitSuccess
+        GenExamples deck limit -> GenExamples.genExamples deck limit
 
 
 data CliCommand
     = DumpWords Deck
     | Download Deck
+    | GenExamples Deck (Maybe Natural)
     deriving stock (Generic, Show)
     deriving anyclass (ParseRecord)
 

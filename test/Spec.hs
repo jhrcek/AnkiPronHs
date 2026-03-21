@@ -14,19 +14,19 @@ main :: IO ()
 main = hspec $ do
     describe "Types.extractWord"
         . for_
-            [ ("pralinka\USe Praline (-, -n)\US\USy", "Praline")
-            , ("vydání (knihy ap.)\USe Auflage (-, -n)\US\USy", "Auflage")
-            , ("zálusk, choutky (na co)\USs Gelüste (auf 4.p)\US\USy", "Gelüste")
-            , ("připravit se na něco (2 předložky)\US(sich) vor/bereiten (auf etw 4.p / für etw)\US\USy", "vorbereiten")
-            , ("trpět (čím)<br />(min?)\USleiden (unter etw) - litt - hat gelitten \US\USy", "leiden")
-            , ("zadržet, zastavit<br />(min?)<br />(er?)\USan/halten - hielt an - hat angehalten<br />er hält an\US\USy", "anhalten")
-            , ("zemřít (na něco)<br />(er?)<br />(min?)\USsterben (an etw - 3.p!) - starb - ist gestorben<br />er stirbt\US\USy", "sterben")
-            , ("napadnou (někoho) (o myšlence)<br />(min?)<br />(er?)\USein/fallen (j-m) (3.p!) - fiel ein - ist eingefallen<br />fällt ein\USDann <b>fiel</b> ihnen Frederick <b>ein</b>.<br>Es ist uns leider nichts <b>eingefallen</b>.\USy", "einfallen")
-            , ("prosit (někoho o něco)<br />(min?)\USbitten (j-n um etw) - bat - hat gebeten\US\USy", "bitten")
+            [ (("pralinka", "e Praline (-, -n)", "", "y"), "Praline")
+            , (("vydání (knihy ap.)", "e Auflage (-, -n)", "", "y"), "Auflage")
+            , (("zálusk, choutky (na co)", "s Gelüste (auf 4.p)", "", "y"), "Gelüste")
+            , (("připravit se na něco (2 předložky)", "(sich) vor/bereiten (auf etw 4.p / für etw)", "", "y"), "vorbereiten")
+            , (("trpět (čím)<br />(min?)", "leiden (unter etw) - litt - hat gelitten ", "", "y"), "leiden")
+            , (("zadržet, zastavit<br />(min?)<br />(er?)", "an/halten - hielt an - hat angehalten<br />er hält an", "", "y"), "anhalten")
+            , (("zemřít (na něco)<br />(er?)<br />(min?)", "sterben (an etw - 3.p!) - starb - ist gestorben<br />er stirbt", "", "y"), "sterben")
+            , (("napadnou (někoho) (o myšlence)<br />(min?)<br />(er?)", "ein/fallen (j-m) (3.p!) - fiel ein - ist eingefallen<br />fällt ein", "Dann <b>fiel</b> ihnen Frederick <b>ein</b>.<br>Es ist uns leider nichts <b>eingefallen</b>.", "y"), "einfallen")
+            , (("prosit (někoho o něco)<br />(min?)", "bitten (j-n um etw) - bat - hat gebeten", "", "y"), "bitten")
             ]
-        $ \(flds, expectedWort) ->
+        $ \((lang1, lang2, examples, yes), expectedWort) ->
             it ("should extract the word correctly: " <> expectedWort) $
-                Types.extractWord (AnkiNote 1 flds "") `shouldBe` Wort expectedWort
+                Types.extractWord (AnkiNote 1 lang1 lang2 examples yes "") `shouldBe` Wort expectedWort
 
     describe "DWDS.search" $ do
         it "should retrieve URL of pron mp3" $
