@@ -224,7 +224,8 @@ wordNotesWithoutExample =
     \JOIN cards c ON c.nid = n.id \
     \WHERE n.tags LIKE '%wort%' AND n.mid = ? \
     \AND n.flds NOT LIKE '%<em>%' \
-    \ORDER BY c.due ASC \
+    \GROUP BY n.id \
+    \ORDER BY MIN(c.due) ASC \
     \LIMIT ?"
 
 
