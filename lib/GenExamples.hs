@@ -3,14 +3,15 @@ module GenExamples
     , exampleMp3FileName
     ) where
 
-import AnkiDB (Deck (..), getWordNotesWithoutExample)
-import Data.Char (isSpace)
+import AnkiDB (Deck (..), getWordNotesWithoutExample, updateNoteFields)
+import Data.Char (isSpace, toLower)
 import Data.Foldable (for_)
 import Data.List (dropWhileEnd)
 import Mplayer (playMp3)
 import Numeric.Natural (Natural)
+import System.IO (hFlush, stdout)
 import System.Process (callProcess, readProcess)
-import Types (AnkiNote (..))
+import Types (AnkiNote (..), getFieldsWithAddedExample)
 
 
 genExamples :: Deck -> Maybe Natural -> IO ()
@@ -32,7 +33,15 @@ genExamples deck limit = do
             , "--write-media"
             , exampleMp3File
             ]
-        playMp3 exampleMp3File -- TODO update anki db with the pronunciation
+        playMp3 exampleMp3File
+        save <- confirm "Save this example to DB?"
+        if save
+            then do
+                let newFlds = getFieldsWithAddedExample example exampleMp3File note
+                updateNoteFields note newFlds
+                -- TODO automate copying to media dir
+                putStrLn "Saved."
+            else putStrLn "Skipping"
   where
     (promptFor, voice, filePrefix) = case deck of
         Deutsch ->
@@ -50,6 +59,20 @@ genExamples deck limit = do
             , "pt-BR-FranciscaNeural"
             , "pt"
             )
+
+
+confirm :: String -> IO Bool
+confirm prompt = do
+    putStr $ prompt <> " [Y/n] "
+    hFlush stdout
+    answer <- getLine
+    case map toLower answer of
+        "" -> pure True
+        "y" -> pure True
+        "n" -> pure False
+        _ -> do
+            putStrLn "Please answer y or n."
+            confirm prompt
 
 
 exampleMp3FileName :: String -> String -> FilePath

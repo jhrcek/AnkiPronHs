@@ -12,6 +12,7 @@ module AnkiDB
     , getWordNotesWithoutPron
     , getWordNotesWithoutExample
     , moveMp3sToMediaDir
+    , updateNoteFields
     , validateNotes
     , wordNotesWithoutExample
     )
@@ -25,6 +26,7 @@ import Data.Traversable (for)
 import Database.SQLite.Simple
     ( Connection
     , Query
+    , execute
     , executeMany
     , query
     , setTrace
@@ -151,6 +153,12 @@ addPronReferences deck = do
         executeMany conn addPronQuery (catMaybes fldsAndNotes)
 
 
+updateNoteFields :: AnkiNote -> String -> IO ()
+updateNoteFields note newFlds =
+    withAnkiDB $ \conn ->
+        execute conn addPronQuery (newFlds, noteId note)
+
+
 withAnkiDB :: (Connection -> IO a) -> IO a
 withAnkiDB action = do
     ankiDB <- getAnkiDbFile
@@ -204,9 +212,20 @@ wordNotes =
     \WHERE tags LIKE '%wort%' AND mid = ?"
 
 
+{- | Notes without example sentences, ordered by cards.due ASC so that
+cards coming up soonest in the Anki review queue are processed first.
+For review cards (queue=2) due is days since collection creation (lower = more overdue).
+For new cards (queue=0) due is position in the new card queue (lower = sooner).
+-}
 wordNotesWithoutExample :: Query
 wordNotesWithoutExample =
-    wordNotes <> " AND flds NOT LIKE '%<em>%' LIMIT ?"
+    "SELECT n.id, n.flds, n.tags \
+    \FROM notes n \
+    \JOIN cards c ON c.nid = n.id \
+    \WHERE n.tags LIKE '%wort%' AND n.mid = ? \
+    \AND n.flds NOT LIKE '%<em>%' \
+    \ORDER BY c.due ASC \
+    \LIMIT ?"
 
 
 addPronQuery :: Query
