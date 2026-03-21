@@ -33,6 +33,7 @@ library
     AnkiDB
     Download
     GenExamples
+    Mplayer
     Search.Duden
     Search.DWDS
     Search.Exception

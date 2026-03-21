@@ -11,8 +11,10 @@ where
 import Control.Exception (IOException, catch)
 import Control.Monad (unless)
 import Data.Foldable (traverse_)
+import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Set (Set, fromList)
 import Data.Text.Lazy qualified as Text
+import Mplayer (playMp3s)
 import System.Directory (doesDirectoryExist, doesFileExist, listDirectory)
 import System.Exit (die)
 import System.FilePath (dropExtension, (<.>), (</>))
@@ -61,15 +63,9 @@ downloadMp3 (Wort wort, Mp3Url url) =
 playDownloaded :: IO ()
 playDownloaded = do
     mp3filenames <- getDownloadedMp3s
-    let mp3s = fmap (downloadDir </>) mp3filenames
-    if null mp3s
-        then putStrLn "There are no files to play back"
-        else
-            callProcess
-                "mplayer"
-                ( "-noautosub" -- don't try to automatically load subtitles
-                    : mp3s
-                )
+    case fmap (downloadDir </>) mp3filenames of
+        [] -> putStrLn "There are no files to play back"
+        (x : xs) -> playMp3s (x :| xs)
 
 
 getDownloadedMp3FileName :: AnkiNote -> IO (Maybe FilePath)
