@@ -4,7 +4,7 @@ module GenExamples
     ) where
 
 import AnkiDB (Deck (..), getWordNotesWithoutExample, updateNoteFields)
-import Data.Char (isSpace, toLower)
+import Data.Char (isDigit, isLetter, isSpace, toLower)
 import Data.Foldable (for_)
 import Data.List (dropWhileEnd)
 import Mplayer (playMp3)
@@ -56,17 +56,18 @@ genExamples deck limit = do
 
 
 textToMp3 :: Deck -> String -> IO FilePath
-textToMp3 deck text = do
-    let mp3File = exampleMp3FileName filePrefix text
+textToMp3 deck sentence = do
+    let mp3File = exampleMp3FileName filePrefix sentence
     callProcess
         "edge-tts"
         [ "--voice=" <> voice
         , "--text"
-        , text
+        , sentence
         , "--write-media"
         , mp3File
         ]
     playMp3 mp3File
+    putStrLn $ sentence <> "[sound:" <> mp3File <> "]"
     pure mp3File
   where
     (voice, filePrefix) = case deck of
@@ -79,12 +80,14 @@ exampleMp3FileName :: String -> String -> FilePath
 exampleMp3FileName prefix sentence =
     prefix <> "_" <> sanitize sentence <> ".mp3"
   where
-    sanitize = collapseSeparators . dropWhileEnd isSepOrDot . dropWhile isSep
-    isSep c = isSpace c || c == ','
-    isSepOrDot c = isSep c || c == '.'
+    sanitize =
+        collapseSeparators
+            . dropWhileEnd (not . isLetter)
+            . dropWhile (not . isLetter)
+            . filter (\c -> isLetter c || isDigit c || isSpace c)
     collapseSeparators [] = []
     collapseSeparators (c : cs)
-        | isSep c = '_' : collapseSeparators (dropWhile isSep cs)
+        | isSpace c = '_' : collapseSeparators (dropWhile isSpace cs)
         | otherwise = c : collapseSeparators cs
 
 
