@@ -9,6 +9,7 @@ module AnkiDB
     ( Deck (..)
     , addPronReferences
     , dumpAllWords
+    , getAnkiMediaDirectory
     , getWordNotesWithoutPron
     , getWordNotesWithoutExample
     , moveMp3sToMediaDir

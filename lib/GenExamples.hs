@@ -3,12 +3,13 @@ module GenExamples
     , textToMp3
     ) where
 
-import AnkiDB (Deck (..), getWordNotesWithoutExample, updateNoteFields)
+import AnkiDB (Deck (..), getAnkiMediaDirectory, getWordNotesWithoutExample, updateNoteFields)
 import Data.Char (isDigit, isLetter, isSpace, toLower)
 import Data.Foldable (for_)
 import Data.List (dropWhileEnd)
 import Mplayer (playMp3)
 import Numeric.Natural (Natural)
+import System.FilePath ((</>))
 import System.IO (hFlush, stdout)
 import System.Process (callProcess, readProcess)
 import Types (AnkiNote (..), getFieldsWithAddedExample)
@@ -24,15 +25,15 @@ genExamples deck limit = do
                 takeWhile (/= '[') (noteLang2 note)
         example <- dropWhileEnd isSpace <$> readProcess "claude" ["--model=sonnet", "-p", promptFor word] ""
         exampleMp3File <- textToMp3 deck example
-        putStrLn $ "Note (" <> word <> "): " <> example <> " -> " <> exampleMp3File
+        putStrLn $ "Note '" <> word <> "': " <> example <> " -> " <> exampleMp3File
         save <- confirm "Save this example to DB?"
         if save
             then do
                 let newFlds = getFieldsWithAddedExample example exampleMp3File note
                 updateNoteFields note newFlds
-                -- TODO automate copying to media dir
                 putStrLn "Saved."
-            else putStrLn "Skipping"
+            else
+                putStrLn "Skipping"
   where
     promptFor word = case deck of
         Deutsch ->
@@ -58,13 +59,16 @@ genExamples deck limit = do
 textToMp3 :: Deck -> String -> IO FilePath
 textToMp3 deck sentence = do
     let mp3File = exampleMp3FileName filePrefix sentence
+    mediaDir <- getAnkiMediaDirectory
     callProcess
         "edge-tts"
         [ "--voice=" <> voice
         , "--text"
         , sentence
         , "--write-media"
-        , mp3File
+        , -- write directly to Anki media folder
+          -- (even if the generated file is dismissed, it's easy to remove all unused media via Anki's "Tools > Check media" feature)
+          mediaDir </> mp3File
         ]
     playMp3 mp3File
     putStrLn $ sentence <> "[sound:" <> mp3File <> "]"
