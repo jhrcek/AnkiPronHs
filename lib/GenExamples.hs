@@ -1,6 +1,6 @@
 module GenExamples
     ( genExamples
-    , exampleMp3FileName
+    , textToMp3
     ) where
 
 import AnkiDB (Deck (..), getWordNotesWithoutExample, updateNoteFields)
@@ -23,17 +23,8 @@ genExamples deck limit = do
                 -- Assuming the word field looks like "WORD[sound:WORD.mp3]"
                 takeWhile (/= '[') (noteLang2 note)
         example <- dropWhileEnd isSpace <$> readProcess "claude" ["--model=sonnet", "-p", promptFor word] ""
-        let exampleMp3File = exampleMp3FileName filePrefix example
-        putStrLn $ "Note " <> show (noteId note) <> " (" <> word <> "): " <> example <> " -> " <> exampleMp3File
-        callProcess
-            "edge-tts"
-            [ "--voice=" <> voice
-            , "--text"
-            , example
-            , "--write-media"
-            , exampleMp3File
-            ]
-        playMp3 exampleMp3File
+        exampleMp3File <- textToMp3 deck example
+        putStrLn $ "Note (" <> word <> "): " <> example <> " -> " <> exampleMp3File
         save <- confirm "Save this example to DB?"
         if save
             then do
@@ -43,22 +34,58 @@ genExamples deck limit = do
                 putStrLn "Saved."
             else putStrLn "Skipping"
   where
-    (promptFor, voice, filePrefix) = case deck of
+    promptFor word = case deck of
         Deutsch ->
-            ( \word -> "Generiere einen Beispielsatz auf Deutsch, der das Wort '" <> word <> "' verwendet. Gib nur den Satz aus, nichts anderes."
-            , "de-DE-AmalaNeural"
-            , "de"
-            )
+            "Generiere einen Beispielsatz auf Deutsch, der das Wort '"
+                <> word
+                <> "' verwendet.\
+                   \ Wenn das Wort ein Verb in einer bestimmten Form ist, muss der Satz es in genau dieser Form verwenden.\
+                   \ Gib nur den Satz aus, nichts anderes."
         English ->
-            ( \word -> "Generate an example sentence in English using the word '" <> word <> "'. Output only the sentence, nothing else."
-            , "en-GB-SoniaNeural"
-            , "en"
-            )
+            "Generate an example sentence in English using the word '"
+                <> word
+                <> "'.\
+                   \ If the word is a verb in a specific form, the sentence must use it in that exact form.\
+                   \ Output only the sentence, nothing else."
         Portuguese ->
-            ( \word -> "Gere uma frase de exemplo em português brasileiro que use a palavra '" <> word <> "'. Não produza nada além da frase."
-            , "pt-BR-FranciscaNeural"
-            , "pt"
-            )
+            "Gere uma frase de exemplo em português brasileiro que use a palavra '"
+                <> word
+                <> "'.\
+                   \ Se a palavra for um verbo numa forma específica, a frase deve usá-la nessa mesma forma.\
+                   \ Não produza nada além da frase."
+
+
+textToMp3 :: Deck -> String -> IO FilePath
+textToMp3 deck text = do
+    let mp3File = exampleMp3FileName filePrefix text
+    callProcess
+        "edge-tts"
+        [ "--voice=" <> voice
+        , "--text"
+        , text
+        , "--write-media"
+        , mp3File
+        ]
+    playMp3 mp3File
+    pure mp3File
+  where
+    (voice, filePrefix) = case deck of
+        Deutsch -> ("de-DE-AmalaNeural", "de")
+        English -> ("en-GB-SoniaNeural", "en")
+        Portuguese -> ("pt-BR-FranciscaNeural", "pt")
+
+
+exampleMp3FileName :: String -> String -> FilePath
+exampleMp3FileName prefix sentence =
+    prefix <> "_" <> sanitize sentence <> ".mp3"
+  where
+    sanitize = collapseSeparators . dropWhileEnd isSepOrDot . dropWhile isSep
+    isSep c = isSpace c || c == ','
+    isSepOrDot c = isSep c || c == '.'
+    collapseSeparators [] = []
+    collapseSeparators (c : cs)
+        | isSep c = '_' : collapseSeparators (dropWhile isSep cs)
+        | otherwise = c : collapseSeparators cs
 
 
 confirm :: String -> IO Bool
@@ -73,16 +100,3 @@ confirm prompt = do
         _ -> do
             putStrLn "Please answer y or n."
             confirm prompt
-
-
-exampleMp3FileName :: String -> String -> FilePath
-exampleMp3FileName prefix sentence =
-    prefix <> "_" <> sanitize sentence <> ".mp3"
-  where
-    sanitize = collapseSeparators . dropWhileEnd isSepOrDot . dropWhile isSep
-    isSep c = isSpace c || c == ','
-    isSepOrDot c = isSep c || c == '.'
-    collapseSeparators [] = []
-    collapseSeparators (c : cs)
-        | isSep c = '_' : collapseSeparators (dropWhile isSep cs)
-        | otherwise = c : collapseSeparators cs
