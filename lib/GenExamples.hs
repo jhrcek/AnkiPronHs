@@ -24,8 +24,8 @@ genExamples deck limit = do
                 -- Assuming the word field looks like "WORD[sound:WORD.mp3]"
                 takeWhile (/= '[') (noteLang2 note)
         example <- dropWhileEnd isSpace <$> readProcess "claude" ["--model=sonnet", "-p", promptFor word] ""
+        putStr $ "Note '" <> word <> "': "
         exampleMp3File <- textToMp3 deck example
-        putStrLn $ "Note '" <> word <> "': " <> example <> " -> " <> exampleMp3File
         save <- confirm "Save this example to DB?"
         if save
             then do
@@ -60,6 +60,7 @@ textToMp3 :: Deck -> String -> IO FilePath
 textToMp3 deck sentence = do
     let mp3File = exampleMp3FileName filePrefix sentence
     mediaDir <- getAnkiMediaDirectory
+    let mp3FileAbsolutePath = mediaDir </> mp3File
     callProcess
         "edge-tts"
         [ "--voice=" <> voice
@@ -68,10 +69,10 @@ textToMp3 deck sentence = do
         , "--write-media"
         , -- write directly to Anki media folder
           -- (even if the generated file is dismissed, it's easy to remove all unused media via Anki's "Tools > Check media" feature)
-          mediaDir </> mp3File
+          mp3FileAbsolutePath
         ]
-    playMp3 mp3File
     putStrLn $ sentence <> "[sound:" <> mp3File <> "]"
+    playMp3 mp3FileAbsolutePath
     pure mp3File
   where
     (voice, filePrefix) = case deck of
