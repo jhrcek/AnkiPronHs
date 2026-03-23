@@ -31,6 +31,10 @@ main = do
     cmd <- getRecord "Anki Pron Downloader"
     case cmd of
         DumpWords deck -> AnkiDB.dumpAllWords deck
+        Download Portuguese ->
+            -- There's no decent onlinde dict with pronunciations for Portuguese,
+            -- so using edge-tts here
+            GenExamples.genWordPron Portuguese
         Download deck -> forever $ do
             op <- pickOperation
             case op of

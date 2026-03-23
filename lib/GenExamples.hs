@@ -1,9 +1,12 @@
+{-# LANGUAGE LambdaCase #-}
+
 module GenExamples
     ( genExamples
+    , genWordPron
     , textToMp3
     ) where
 
-import AnkiDB (Deck (..), getAnkiMediaDirectory, getWordNotesWithoutExample, updateNoteFields)
+import AnkiDB (Deck (..), getAnkiMediaDirectory, getWordNotesWithoutExample, getWordNotesWithoutPron, updateNoteFields)
 import Data.Char (isDigit, isLetter, isSpace, toLower)
 import Data.Foldable (for_)
 import Data.List (dropWhileEnd)
@@ -12,28 +15,40 @@ import Numeric.Natural (Natural)
 import System.FilePath ((</>))
 import System.IO (hFlush, stdout)
 import System.Process (callProcess, readProcess)
-import Types (AnkiNote (..), getFieldsWithAddedExample)
+import Types (AnkiNote (..), Wort (..), extractWord, getFieldsWithAddedExample, getFieldsWithAddedMp3Reference)
+
+
+-- TODO: add a function that adds an example to a note with given note id.
+-- TODO: modify the getFieldsWithAddedExample to either add or APPEND with <br> the example
+-- TODO: add a command to just generate an example mp3 for cards that already have an example, but without pron mp3
+
+genWordPron :: Deck -> IO ()
+genWordPron deck = do
+    notes <- getWordNotesWithoutPron deck
+    putStrLn $ "Found " <> show (length notes) <> " notes without pronunciation"
+    for_ notes $ \note -> do
+        let Wort word = extractWord note
+            mp3FileName = filePrefixForDeck deck <> "_" <> word <> ".mp3"
+        mp3FilePath <- generateMp3 deck word mp3FileName
+        putStrLn $ word <> " -> [sound:" <> mp3FileName <> "]"
+        confirmAndSave mp3FilePath note (getFieldsWithAddedMp3Reference mp3FileName note)
 
 
 genExamples :: Deck -> Maybe Natural -> IO ()
 genExamples deck limit = do
     putStrLn $ "Generating examples for deck " <> show deck <> " with limit " <> show limit
     ws <- getWordNotesWithoutExample deck limit
+    putStrLn $ "Found " <> show (length ws) <> " notes without example"
     for_ ws $ \note -> do
         let word =
                 -- Assuming the word field looks like "WORD[sound:WORD.mp3]"
                 takeWhile (/= '[') (noteLang2 note)
         example <- dropWhileEnd isSpace <$> readProcess "claude" ["--model=sonnet", "-p", promptFor word] ""
         putStr $ "Note '" <> word <> "': "
-        exampleMp3File <- textToMp3 deck example
-        save <- confirm "Save this example to DB?"
-        if save
-            then do
-                let newFlds = getFieldsWithAddedExample example exampleMp3File note
-                updateNoteFields note newFlds
-                putStrLn "Saved."
-            else
-                putStrLn "Skipping"
+        let mp3FileName = exampleMp3FileName (filePrefixForDeck deck) example
+        mp3FilePath <- generateMp3 deck example mp3FileName
+        putStrLn $ example <> "[sound:" <> mp3FileName <> "]"
+        confirmAndSave mp3FilePath note (getFieldsWithAddedExample example mp3FileName note)
   where
     promptFor word = case deck of
         Deutsch ->
@@ -56,29 +71,49 @@ genExamples deck limit = do
                    \ Não produza nada além da frase."
 
 
-textToMp3 :: Deck -> String -> IO FilePath
-textToMp3 deck sentence = do
-    let mp3File = exampleMp3FileName filePrefix sentence
+-- | Generate an MP3 file using edge-tts, writing it directly to the Anki media folder.
+generateMp3 :: Deck -> String -> FilePath -> IO FilePath
+generateMp3 deck text mp3FileName = do
     mediaDir <- getAnkiMediaDirectory
-    let mp3FileAbsolutePath = mediaDir </> mp3File
+    let mp3FilePath = mediaDir </> mp3FileName
     callProcess
         "edge-tts"
-        [ "--voice=" <> voice
+        [ "--voice=" <> voiceForDeck deck
         , "--text"
-        , sentence
+        , text
         , "--write-media"
-        , -- write directly to Anki media folder
-          -- (even if the generated file is dismissed, it's easy to remove all unused media via Anki's "Tools > Check media" feature)
-          mp3FileAbsolutePath
+        , mp3FilePath
         ]
-    putStrLn $ sentence <> "[sound:" <> mp3File <> "]"
-    playMp3 mp3FileAbsolutePath
-    pure mp3File
-  where
-    (voice, filePrefix) = case deck of
-        Deutsch -> ("de-DE-AmalaNeural", "de")
-        English -> ("en-GB-SoniaNeural", "en")
-        Portuguese -> ("pt-BR-FranciscaNeural", "pt")
+    pure mp3FilePath
+
+
+-- | Play the generated MP3, ask user to confirm, and save to DB if confirmed.
+confirmAndSave :: FilePath -> AnkiNote -> String -> IO ()
+confirmAndSave mp3FilePath note newFlds = do
+    playMp3 mp3FilePath
+    save <- confirm "Save to DB?"
+    if save
+        then do
+            updateNoteFields note newFlds
+            putStrLn "Saved."
+        else
+            putStrLn "Skipping."
+
+
+textToMp3 :: Deck -> String -> IO FilePath
+textToMp3 deck sentence = do
+    let mp3FileName = exampleMp3FileName (filePrefixForDeck deck) sentence
+    mp3FilePath <- generateMp3 deck sentence mp3FileName
+    putStrLn $ sentence <> "[sound:" <> mp3FileName <> "]"
+    playMp3 mp3FilePath
+    pure mp3FileName
+
+
+filePrefixForDeck :: Deck -> String
+filePrefixForDeck = \case
+    Deutsch -> "de"
+    English -> "en"
+    Portuguese -> "pt"
 
 
 exampleMp3FileName :: String -> String -> FilePath
@@ -94,6 +129,13 @@ exampleMp3FileName prefix sentence =
     collapseSeparators (c : cs)
         | isSpace c = '_' : collapseSeparators (dropWhile isSpace cs)
         | otherwise = c : collapseSeparators cs
+
+
+voiceForDeck :: Deck -> String
+voiceForDeck = \case
+    Deutsch -> "de-DE-AmalaNeural"
+    English -> "en-GB-SoniaNeural"
+    Portuguese -> "pt-BR-FranciscaNeural"
 
 
 confirm :: String -> IO Bool

@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Types where
 
@@ -8,7 +9,8 @@ import Data.List (intercalate)
 import Data.List.Split (splitOn)
 import Data.Text qualified as Text
 import Data.Text.Lazy (Text)
-import Database.SQLite.Simple.FromRow (FromRow (..), field)
+import Database.SQLite.Simple.FromField (ResultError (ConversionFailed), fromField, returnError)
+import Database.SQLite.Simple.FromRow (FromRow (..), field, fieldWith)
 import Text.Regex.PCRE.Heavy (Regex, gsub, re)
 
 
@@ -56,14 +58,16 @@ data AnkiNote = AnkiNote
 
 instance FromRow AnkiNote where
     fromRow = do
-        nId <- field
-        flds <- field
-        tags <- field
-        case splitOn "\US" flds of
-            [lang1, lang2, examples, yes] ->
-                pure $ AnkiNote nId lang1 lang2 examples yes tags
-            fields ->
-                error $ "Expected 4 fields, but got " <> show (length fields) <> ": " <> show fields
+        noteId <- field
+        (noteLang1, noteLang2, noteExamples, noteYes) <- fieldWith $ \f -> do
+            flds <- fromField f
+            case splitOn "\US" flds of
+                [l1, l2, ex, y] -> pure (l1, l2, ex, y)
+                fields ->
+                    returnError ConversionFailed f $
+                        "Expected 4 fields, but got " <> show (length fields) <> ": " <> show fields
+        noteTags <- field
+        pure $ AnkiNote{..}
 
 
 getFields :: AnkiNote -> [String]
