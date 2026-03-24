@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module GenExamples
     ( genExamples
@@ -6,7 +7,14 @@ module GenExamples
     , textToMp3
     ) where
 
-import AnkiDB (Deck (..), getAnkiMediaDirectory, getWordNotesWithoutExample, getWordNotesWithoutPron, updateNoteFields)
+import AnkiDB
+    ( Deck (..)
+    , getAnkiMediaDirectory
+    , getWordNotesWithoutExample
+    , getWordNotesWithoutPron
+    , updateNoteFields
+    )
+import Control.Concurrent.Async (async, wait)
 import Data.Char (isDigit, isLetter, isSpace, toLower)
 import Data.Foldable (for_)
 import Data.List (dropWhileEnd)
@@ -39,36 +47,71 @@ genExamples deck limit = do
     putStrLn $ "Generating examples for deck " <> show deck <> " with limit " <> show limit
     ws <- getWordNotesWithoutExample deck limit
     putStrLn $ "Found " <> show (length ws) <> " notes without example"
-    for_ ws $ \note -> do
-        let word =
-                -- Assuming the word field looks like "WORD[sound:WORD.mp3]"
-                takeWhile (/= '[') (noteLang2 note)
-        example <- dropWhileEnd isSpace <$> readProcess "claude" ["--model=sonnet", "-p", promptFor word] ""
-        putStr $ "Note '" <> word <> "': "
-        let mp3FileName = exampleMp3FileName (filePrefixForDeck deck) example
-        mp3FilePath <- generateMp3 deck example mp3FileName
-        putStrLn $ example <> "[sound:" <> mp3FileName <> "]"
-        confirmAndSave mp3FilePath note (getFieldsWithAddedExample example mp3FileName note)
+    case ws of
+        [] -> pure ()
+        (first : rest) -> do
+            -- Start preparing the first note
+            firstPrep <- prepareNote deck first
+            -- Process notes with one-step-ahead prefetching
+            go firstPrep rest
   where
-    promptFor word = case deck of
-        Deutsch ->
-            "Generiere einen Beispielsatz auf Deutsch, der das Wort '"
-                <> word
-                <> "' verwendet.\
-                   \ Wenn das Wort ein Verb in einer bestimmten Form ist, muss der Satz es in genau dieser Form verwenden.\
-                   \ Gib nur den Satz aus, nichts anderes."
-        English ->
-            "Generate an example sentence in English using the word '"
-                <> word
-                <> "'.\
-                   \ If the word is a verb in a specific form, the sentence must use it in that exact form.\
-                   \ Output only the sentence, nothing else."
-        Portuguese ->
-            "Gere uma frase de exemplo em português brasileiro que use a palavra '"
-                <> word
-                <> "'.\
-                   \ Se a palavra for um verbo numa forma específica, a frase deve usá-la nessa mesma forma.\
-                   \ Não produza nada além da frase."
+    go prep [] = presentNote deck prep
+    go prep (next : rest) = do
+        -- Start preparing next note while user reviews current one
+        nextPrepAsync <- async (prepareNote deck next)
+        presentNote deck prep
+        nextPrep <- wait nextPrepAsync
+        go nextPrep rest
+
+
+-- | Result of preparing a note: LLM example generated and MP3 file created.
+data PreparedNote = PreparedNote
+    { pNote :: AnkiNote
+    , pWord :: String
+    , pExample :: String
+    , pMp3FileName :: String
+    , pMp3FilePath :: FilePath
+    }
+
+
+-- | Call LLM to generate an example and create the MP3 file.
+prepareNote :: Deck -> AnkiNote -> IO PreparedNote
+prepareNote deck note = do
+    let word = takeWhile (/= '[') (noteLang2 note)
+    example <- dropWhileEnd isSpace <$> readProcess "claude" ["--model=sonnet", "-p", promptForDeck deck word] ""
+    let mp3FileName = exampleMp3FileName (filePrefixForDeck deck) example
+    mp3FilePath <- generateMp3 deck example mp3FileName
+    pure PreparedNote{pNote = note, pWord = word, pExample = example, pMp3FileName = mp3FileName, pMp3FilePath = mp3FilePath}
+
+
+-- | Show the prepared example to the user, play audio, and confirm saving.
+presentNote :: Deck -> PreparedNote -> IO ()
+presentNote _deck PreparedNote{..} = do
+    putStr $ "Note '" <> pWord <> "': "
+    putStrLn $ pExample <> "[sound:" <> pMp3FileName <> "]"
+    confirmAndSave pMp3FilePath pNote (getFieldsWithAddedExample pExample pMp3FileName pNote)
+
+
+promptForDeck :: Deck -> String -> String
+promptForDeck deck word = case deck of
+    Deutsch ->
+        "Generiere einen Beispielsatz auf Deutsch, der das Wort '"
+            <> word
+            <> "' verwendet.\
+               \ Wenn das Wort ein Verb in einer bestimmten Form ist, muss der Satz es in genau dieser Form verwenden.\
+               \ Gib nur den Satz aus, nichts anderes."
+    English ->
+        "Generate an example sentence in English using the word '"
+            <> word
+            <> "'.\
+               \ If the word is a verb in a specific form, the sentence must use it in that exact form.\
+               \ Output only the sentence, nothing else."
+    Portuguese ->
+        "Gere uma frase de exemplo em português brasileiro que use a palavra '"
+            <> word
+            <> "'.\
+               \ Se a palavra for um verbo numa forma específica, a frase deve usá-la nessa mesma forma.\
+               \ Não produza nada além da frase."
 
 
 -- | Generate an MP3 file using edge-tts, writing it directly to the Anki media folder.
