@@ -1,3 +1,4 @@
 resolver: lts-22.44
 packages:
   - .
+notify-if-nix-on-path: false

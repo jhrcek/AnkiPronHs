@@ -6,3 +6,7 @@ format:
 .PHONY: install
 install:
 	stack install --pedantic --local-bin-path ~/Dropbox/Softy/AnkiPron/
+
+.PHONY: watch
+watch:
+	ghciwatch --watch lib --command "stack repl" --error-file ghciwatch.log

@@ -5,3 +5,4 @@ collection.anki2
 # File with mp3 URLs to download
 urls.txt
 .stack-work
+ghciwatch.log
