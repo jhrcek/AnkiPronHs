@@ -203,7 +203,11 @@ allNotes =
 
 wordNotesWithoutPron :: Query
 wordNotesWithoutPron =
-    wordNotes <> " AND flds NOT LIKE '%.mp3%'"
+    wordNotes
+        -- Split the flds on "\US" and check for presence of .mp3 in the second field (portuguese/german/english word)
+        <> " AND substr(flds, instr(flds, char(31)) + 1, \
+           \instr(substr(flds, instr(flds, char(31)) + 1), char(31)) - 1) \
+           \NOT LIKE '%.mp3%'"
 
 
 wordNotes :: Query
