@@ -99,19 +99,19 @@ promptForDeck deck word = case deck of
             <> word
             <> "' verwendet.\
                \ Wenn das Wort ein Verb in einer bestimmten Form ist, muss der Satz es in genau dieser Form verwenden.\
-               \ Gib nur den Satz aus, nichts anderes."
+               \ Gib nur den Satz als reinen Text aus, ohne Markdown oder Formatierung."
     English ->
         "Generate an example sentence in English using the word '"
             <> word
             <> "'.\
                \ If the word is a verb in a specific form, the sentence must use it in that exact form.\
-               \ Output only the sentence, nothing else."
+               \ Output only the sentence as plain text, no markdown or formatting."
     Portuguese ->
         "Gere uma frase de exemplo em português brasileiro que use a palavra '"
             <> word
             <> "'.\
                \ Se a palavra for um verbo numa forma específica, a frase deve usá-la nessa mesma forma.\
-               \ Não produza nada além da frase."
+               \ Produza apenas a frase em texto simples, sem markdown ou formatação."
 
 
 -- | Generate an MP3 file using edge-tts, writing it directly to the Anki media folder.
