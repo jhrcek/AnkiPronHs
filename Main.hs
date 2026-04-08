@@ -45,7 +45,7 @@ main = do
                     AnkiDB.moveMp3sToMediaDir
                 PlaySounds -> Download.playDownloaded
                 Quit -> exitSuccess
-        GenExamples deck limit -> GenExamples.genExamples deck limit
+        GenExamples deck limit -> GenExamples.genExamples deck (GenExamples.AllNotes limit)
 
 
 data CliCommand

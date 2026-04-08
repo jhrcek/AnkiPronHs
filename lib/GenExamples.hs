@@ -2,7 +2,8 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module GenExamples
-    ( genExamples
+    ( ExampleQuery (..)
+    , genExamples
     , genWordPron
     , textToMp3
     ) where
@@ -10,6 +11,7 @@ module GenExamples
 import AnkiDB
     ( Deck (..)
     , getAnkiMediaDirectory
+    , getNotesByIds
     , getWordNotesWithoutExample
     , getWordNotesWithoutPron
     , updateNoteFields
@@ -26,7 +28,11 @@ import System.Process (callProcess, readProcess)
 import Types (AnkiNote (..), Wort (..), extractWord, getFieldsWithAddedExample, getFieldsWithAddedMp3Reference)
 
 
--- TODO: add a function that adds an example to a note with given note id.
+data ExampleQuery
+    = AllNotes (Maybe Natural) -- optional limit
+    | NotesById [Int] -- specific note IDs
+
+
 -- TODO: modify the getFieldsWithAddedExample to either add or APPEND with <br> the example
 -- TODO: add a command to just generate an example mp3 for cards that already have an example, but without pron mp3
 
@@ -42,10 +48,15 @@ genWordPron deck = do
         confirmAndSave mp3FilePath note (getFieldsWithAddedMp3Reference mp3FileName note)
 
 
-genExamples :: Deck -> Maybe Natural -> IO ()
-genExamples deck limit = do
-    putStrLn $ "Generating examples for deck " <> show deck <> " with limit " <> show limit
-    ws <- getWordNotesWithoutExample deck limit
+genExamples :: Deck -> ExampleQuery -> IO ()
+genExamples deck query = do
+    ws <- case query of
+        AllNotes limit -> do
+            putStrLn $ "Generating examples for deck " <> show deck <> " with limit " <> show limit
+            getWordNotesWithoutExample deck limit
+        NotesById noteIds -> do
+            putStrLn $ "Generating examples for " <> show (length noteIds) <> " specific notes"
+            getNotesByIds noteIds
     putStrLn $ "Found " <> show (length ws) <> " notes without example"
     case ws of
         [] -> pure ()

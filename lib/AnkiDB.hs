@@ -10,6 +10,7 @@ module AnkiDB
     , addPronReferences
     , dumpAllWords
     , getAnkiMediaDirectory
+    , getNotesByIds
     , getWordNotesWithoutPron
     , getWordNotesWithoutExample
     , moveMp3sToMediaDir
@@ -20,13 +21,13 @@ module AnkiDB
 where
 
 import Data.Foldable (for_, traverse_)
-import Data.List (isInfixOf, isPrefixOf, nub, sort)
+import Data.List (intersperse, isInfixOf, isPrefixOf, nub, sort)
 import Data.Maybe (catMaybes)
 import Data.Text.IO qualified as Text
 import Data.Traversable (for)
 import Database.SQLite.Simple
     ( Connection
-    , Query
+    , Query (..)
     , execute
     , executeMany
     , query
@@ -124,6 +125,12 @@ getWordNotesWithoutPron deck =
 getWordNotesWithoutExample :: Deck -> Maybe Natural -> IO [AnkiNote]
 getWordNotesWithoutExample deck mLimit =
     withAnkiDB (\conn -> query conn wordNotesWithoutExample (deck, maybe 100000 toInteger mLimit))
+
+
+getNotesByIds :: [Int] -> IO [AnkiNote]
+getNotesByIds noteIds =
+    withAnkiDB $ \conn ->
+        query conn (notesByIdsQuery (length noteIds)) noteIds
 
 
 dumpAllWords :: Deck -> IO ()
@@ -240,6 +247,13 @@ wordNotesWithoutExample =
     \GROUP BY n.id \
     \ORDER BY MIN(c.due) ASC \
     \LIMIT ?"
+
+
+notesByIdsQuery :: Int -> Query
+notesByIdsQuery n =
+    Query $ "SELECT id, flds, tags FROM notes WHERE id IN (" <> placeholders <> ")"
+  where
+    placeholders = mconcat $ intersperse "," $ replicate n "?"
 
 
 addPronQuery :: Query
