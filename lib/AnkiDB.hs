@@ -221,6 +221,14 @@ wordNotes =
 cards coming up soonest in the Anki review queue are processed first.
 For review cards (queue=2) due is days since collection creation (lower = more overdue).
 For new cards (queue=0) due is position in the new card queue (lower = sooner).
+
+Add this to WHERE to get "notes due for review within the next 24 hours":
+    \AND n.id IN ( \
+    \    SELECT DISTINCT c2.nid \
+    \    FROM revlog r \
+    \    JOIN cards c2 ON r.cid = c2.id \
+    \    WHERE r.id > (strftime('%s', 'now') - 86400) * 1000 \
+    \) \
 -}
 wordNotesWithoutExample :: Query
 wordNotesWithoutExample =
