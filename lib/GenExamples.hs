@@ -90,7 +90,7 @@ prepareNote :: Deck -> AnkiNote -> IO PreparedNote
 prepareNote deck note = do
     let word = takeWhile (/= '[') (noteLang2 note)
     example <- dropWhileEnd isSpace <$> readProcess "claude" ["--model=sonnet", "-p", promptForDeck deck word] ""
-    let mp3FileName = exampleMp3FileName (filePrefixForDeck deck) example
+    let mp3FileName = exampleMp3FileName deck example
     mp3FilePath <- generateMp3 deck example mp3FileName
     pure PreparedNote{pNote = note, pWord = word, pExample = example, pMp3FileName = mp3FileName, pMp3FilePath = mp3FilePath}
 
@@ -156,7 +156,7 @@ confirmAndSave mp3FilePath note newFlds = do
 
 textToMp3 :: Deck -> String -> IO FilePath
 textToMp3 deck sentence = do
-    let mp3FileName = exampleMp3FileName (filePrefixForDeck deck) sentence
+    let mp3FileName = exampleMp3FileName deck sentence
     mp3FilePath <- generateMp3 deck sentence mp3FileName
     putStrLn $ sentence <> "[sound:" <> mp3FileName <> "]"
     playMp3 mp3FilePath
@@ -170,9 +170,9 @@ filePrefixForDeck = \case
     Portuguese -> "pt"
 
 
-exampleMp3FileName :: String -> String -> FilePath
-exampleMp3FileName prefix sentence =
-    prefix <> "_" <> sanitize sentence <> ".mp3"
+exampleMp3FileName :: Deck -> String -> FilePath
+exampleMp3FileName deck sentence =
+    filePrefixForDeck deck <> "_" <> sanitize sentence <> ".mp3"
   where
     sanitize =
         collapseSeparators
