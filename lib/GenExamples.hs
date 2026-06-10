@@ -187,7 +187,19 @@ exampleMp3FileName deck sentence =
 
 voiceForDeck :: Deck -> String
 voiceForDeck = \case
-    Deutsch -> "de-DE-AmalaNeural"
+    -- See all options via `edge-tts --list-voices`
+    Deutsch ->
+        -- "de-DE-AmalaNeural"
+        -- "de-AT-IngridNeural"
+        -- "de-AT-JonasNeural"
+        -- "de-CH-JanNeural"
+        -- "de-CH-LeniNeural" -- megaschweizerisch
+        -- "de-DE-AmalaNeural"
+        -- "de-DE-ConradNeural" -- M, OK
+        -- "de-DE-FlorianMultilingualNeural"
+        -- "de-DE-KatjaNeural"
+        -- "de-DE-KillianNeural"
+        "de-DE-SeraphinaMultilingualNeural"
     English -> "en-GB-SoniaNeural"
     Portuguese -> "pt-BR-FranciscaNeural"
 
