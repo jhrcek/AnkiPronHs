@@ -1,4 +1,4 @@
-resolver: lts-22.44
+resolver: nightly-2026-06-18 # GHC 9.12.4
 packages:
   - .
 notify-if-nix-on-path: false
