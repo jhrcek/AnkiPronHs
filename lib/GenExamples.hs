@@ -17,14 +17,16 @@ import AnkiDB
     , updateNoteFields
     )
 import Control.Concurrent.Async (async, wait)
+import Control.Monad (void)
 import Data.Char (isDigit, isLetter, isSpace, toLower)
 import Data.Foldable (for_)
 import Data.List (dropWhileEnd)
 import Mplayer (playMp3)
 import Numeric.Natural (Natural)
+import System.Directory (findExecutable)
 import System.FilePath ((</>))
-import System.IO (hFlush, stdout)
-import System.Process (callProcess, readProcess)
+import System.IO (hClose, hFlush, hPutStr, stdout)
+import System.Process (CreateProcess (..), StdStream (..), callProcess, createProcess, proc, readProcess, waitForProcess)
 import Types (AnkiNote (..), Wort (..), extractWord, getFieldsWithAddedExample, getFieldsWithAddedMp3Reference)
 
 
@@ -157,10 +159,28 @@ confirmAndSave mp3FilePath note newFlds = do
 textToMp3 :: Deck -> String -> IO FilePath
 textToMp3 deck sentence = do
     let mp3FileName = exampleMp3FileName deck sentence
+        textWithSound = sentence <> "[sound:" <> mp3FileName <> "]"
     mp3FilePath <- generateMp3 deck sentence mp3FileName
-    putStrLn $ sentence <> "[sound:" <> mp3FileName <> "]"
+    putStrLn textWithSound
+    copyToClipboard textWithSound
     playMp3 mp3FilePath
     pure mp3FileName
+
+
+copyToClipboard :: String -> IO ()
+copyToClipboard text = do
+    mXclip <- findExecutable "xclip"
+    case mXclip of
+        Just xclip -> do
+            -- Only pipe stdin: xclip forks a daemon to serve the clipboard,
+            -- and capturing its stdout/stderr would block until the daemon exits.
+            (Just hIn, _, _, ph) <- createProcess (proc xclip ["-selection", "clipboard"]){std_in = CreatePipe}
+            hPutStr hIn text
+            hClose hIn
+            void $ waitForProcess ph
+            putStrLn "(copied to clipboard)"
+        Nothing ->
+            putStrLn "Warning: xclip not found on PATH, not copying to clipboard."
 
 
 filePrefixForDeck :: Deck -> String
