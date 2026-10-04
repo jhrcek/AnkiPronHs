@@ -18,7 +18,16 @@ import Data.Text.Read (decimal)
 import Download qualified
 import GenExamples qualified
 import Numeric.Natural (Natural)
-import Options.Generic (Generic, ParseRecord, Text, getRecord)
+import Options.Generic
+    ( Generic
+    , Modifiers (..)
+    , ParseFields (..)
+    , ParseRecord (..)
+    , Text
+    , defaultModifiers
+    , getRecord
+    , parseRecordWithModifiers
+    )
 import Search.DWDS qualified as DWDS
 import Search.Duden qualified as Duden
 import Search.VocabularyCom qualified as VocabularyCom
@@ -46,14 +55,40 @@ main = do
                 PlaySounds -> Download.playDownloaded
                 Quit -> exitSuccess
         GenExamples deck limit -> GenExamples.genExamples deck (GenExamples.AllNotes limit)
+        AddAnkiImport deck AddImportArgs{front, back, example} ->
+            GenExamples.addAnkiImport deck (Text.unpack front) (Text.unpack back) (Text.unpack <$> example)
 
 
 data CliCommand
     = DumpWords Deck
     | Download Deck
     | GenExamples Deck (Maybe Natural)
+    | AddAnkiImport Deck AddImportArgs
+    deriving stock (Generic, Show)
+
+
+instance ParseRecord CliCommand where
+    parseRecord =
+        parseRecordWithModifiers
+            defaultModifiers
+                { constructorNameModifier = \case
+                    "AddAnkiImport" -> "add-anki-import"
+                    name -> constructorNameModifier defaultModifiers name
+                }
+
+
+-- | Separate record, so that deck can stay positional while front/back/example are named options
+data AddImportArgs = AddImportArgs
+    { front :: Text
+    , back :: Text
+    , example :: Maybe Text
+    }
     deriving stock (Generic, Show)
     deriving anyclass (ParseRecord)
+
+
+instance ParseFields AddImportArgs where
+    parseFields _ _ _ _ = parseRecord
 
 
 pickOperation :: IO Operation

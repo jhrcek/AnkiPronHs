@@ -19,7 +19,7 @@ Tests are integration tests (HSpec) that hit real external dictionary APIs. Run 
 Tool for downloading pronunciation MP3s and generating example sentences for Anki flashcard decks (Deutsch, English, Portuguese).
 
 **Core flow:**
-- `Main.hs` — CLI entry point with three commands: `DumpWords`, `Download`, `GenExamples`
+- `Main.hs` — CLI entry point with four commands: `DumpWords`, `Download`, `GenExamples`, `AddAnkiImport` (non-interactive: generates MP3s for card back + optional example and appends a line to `toImport.csv`)
 - `lib/AnkiDB.hs` — SQLite queries against Anki's `collection.anki2` database; deck identification via hardcoded model IDs
 - `lib/Search/DWDS.hs`, `lib/Search/Duden.hs`, `lib/Search/VocabularyCom.hs` — HTML scraping of online dictionaries to find MP3 URLs. Deutsch tries DWDS first, falls back to Duden
 - `lib/Download.hs` — Downloads MP3s via `wget` to `Download/` directory

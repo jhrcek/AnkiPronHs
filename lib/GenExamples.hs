@@ -3,6 +3,7 @@
 
 module GenExamples
     ( ExampleQuery (..)
+    , addAnkiImport
     , genExamples
     , genWordPron
     , textToMp3
@@ -17,13 +18,14 @@ import AnkiDB
     , updateNoteFields
     )
 import Control.Concurrent.Async (async, wait)
-import Control.Monad (void)
+import Control.Monad (void, when)
 import Data.Char (isDigit, isLetter, isSpace, toLower)
 import Data.Foldable (for_)
 import Data.List (dropWhileEnd)
 import Mplayer (playMp3)
 import Numeric.Natural (Natural)
 import System.Directory (findExecutable)
+import System.Exit (die)
 import System.FilePath ((</>))
 import System.IO (hClose, hFlush, hPutStr, stdout)
 import System.Process (CreateProcess (..), StdStream (..), callProcess, createProcess, proc, readProcess, waitForProcess)
@@ -156,15 +158,45 @@ confirmAndSave mp3FilePath note newFlds = do
             putStrLn "Skipping."
 
 
-textToMp3 :: Deck -> String -> IO FilePath
+textToMp3 :: Deck -> String -> IO ()
 textToMp3 deck sentence = do
-    let mp3FileName = exampleMp3FileName deck sentence
-        textWithSound = sentence <> "[sound:" <> mp3FileName <> "]"
-    mp3FilePath <- generateMp3 deck sentence mp3FileName
-    putStrLn textWithSound
-    copyToClipboard textWithSound
+    (sentenceWithSound, mp3FilePath) <- textWithSound deck sentence
+    copyToClipboard sentenceWithSound
     playMp3 mp3FilePath
-    pure mp3FileName
+
+
+{- | Generate MP3s for the back of the card and the optional example
+and append a line importable into Anki to toImport.csv in the current directory.
+-}
+addAnkiImport :: Deck -> String -> String -> Maybe String -> IO ()
+addAnkiImport deck front back mExample = do
+    mapM_ validateImportField $ [front, back] <> maybe [] pure mExample
+    (backField, backMp3) <- textWithSound deck back
+    putStrLn $ "Generated " <> backMp3
+    exampleField <- case mExample of
+        Nothing -> pure ""
+        Just example -> do
+            (exampleField, exampleMp3) <- textWithSound deck example
+            putStrLn $ "Generated " <> exampleMp3
+            pure exampleField
+    let line = front <> ";" <> backField <> ";" <> exampleField <> ";y"
+    appendFile "toImport.csv" (line <> "\n")
+    putStrLn line
+
+
+validateImportField :: String -> IO ()
+validateImportField text =
+    when (any (`elem` ";\n\r") text) $
+        die $
+            "Argument must not contain ';' or newlines: " <> show text
+
+
+-- | Generate MP3 for the text and return the text with appended sound reference, along with path to the MP3.
+textWithSound :: Deck -> String -> IO (String, FilePath)
+textWithSound deck text = do
+    let mp3FileName = exampleMp3FileName deck text
+    mp3FilePath <- generateMp3 deck text mp3FileName
+    pure (text <> "[sound:" <> mp3FileName <> "]", mp3FilePath)
 
 
 copyToClipboard :: String -> IO ()
@@ -178,7 +210,7 @@ copyToClipboard text = do
             hPutStr hIn text
             hClose hIn
             void $ waitForProcess ph
-            putStrLn "(copied to clipboard)"
+            putStrLn $ show text ++ " -> clipboard"
         Nothing ->
             putStrLn "Warning: xclip not found on PATH, not copying to clipboard."
 
