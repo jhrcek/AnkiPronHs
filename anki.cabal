@@ -33,6 +33,7 @@ library
     AnkiDB
     Download
     GenExamples
+    GHCi
     Mplayer
     Search.Duden
     Search.DWDS
