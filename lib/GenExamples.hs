@@ -141,6 +141,7 @@ generateMp3 deck text mp3FileName = do
         , text
         , "--write-media"
         , mp3FilePath
+        , "--no-progress"
         ]
     pure mp3FilePath
 
